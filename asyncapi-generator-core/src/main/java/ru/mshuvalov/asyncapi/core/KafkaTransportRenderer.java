@@ -16,37 +16,49 @@ final class KafkaTransportRenderer implements TransportRenderer {
             String payload = ContractRenderer.payloadType(op.payload());
             String headers = op.messageName() + "Headers";
             if (op.action() == AsyncApiDocument.Action.SEND && options.generateProducers()) {
-                String name = op.messageName() + "KafkaProducer";
-                String content = "package " + options.kafkaPackage() + ";\n\n"
-                    + "import " + options.contractPackage() + "." + op.messageName() + "Publisher;\n"
-                    + "import " + options.contractPackage() + "." + headers + ";\n"
-                    + "import " + options.contractPackage() + ".Channels;\n"
-                    + "import " + options.modelPackage() + "." + payload + ";\n"
-                    + "import org.springframework.kafka.core.KafkaTemplate;\n"
-                    + "import org.springframework.stereotype.Component;\n\n"
-                    + "@Component\npublic class " + name + " implements " + op.messageName() + "Publisher {\n"
-                    + "    private final KafkaTemplate<String, " + payload + "> kafkaTemplate;\n"
-                    + "    public " + name + "(KafkaTemplate<String, " + payload + "> kafkaTemplate) { this.kafkaTemplate = kafkaTemplate; }\n"
-                    + "    @Override public void send(" + payload + " payload, " + headers + " headers) { kafkaTemplate.send(Channels." + ContractRenderer.channelConstant(op.topic()) + ", payload); }\n}\n";
-                sources.add(new GeneratedSource(path(options.kafkaPackage(), name), content));
+                sources.add(renderProducer(op, options, payload, headers));
             } else if (op.action() == AsyncApiDocument.Action.RECEIVE && options.generateConsumers()) {
-                String name = op.messageName() + "KafkaListenerAdapter";
-                String content = "package " + options.kafkaPackage() + ";\n\n"
-                    + "import " + options.contractPackage() + "." + op.messageName() + "Handler;\n"
-                    + "import " + options.contractPackage() + "." + headers + ";\n"
-                    + "import " + options.contractPackage() + ".MessageMetadata;\n"
-                    + "import " + options.contractPackage() + ".Channels;\n"
-                    + "import " + options.modelPackage() + "." + payload + ";\n"
-                    + "import org.springframework.kafka.annotation.KafkaListener;\n"
-                    + "import org.springframework.stereotype.Component;\n\n"
-                    + "@Component\npublic class " + name + " {\n    private final " + op.messageName() + "Handler handler;\n"
-                    + "    public " + name + "(" + op.messageName() + "Handler handler) { this.handler = handler; }\n"
-                    + "    @KafkaListener(topics = Channels." + ContractRenderer.channelConstant(op.topic()) + ")\n"
-                    + "    public void onMessage(" + payload + " payload) { handler.handle(payload, null, new MessageMetadata(Channels." + ContractRenderer.channelConstant(op.topic()) + ", null)); }\n}\n";
-                sources.add(new GeneratedSource(path(options.kafkaPackage(), name), content));
+                sources.add(renderListenerAdapter(op, options, payload, headers));
             }
         }
         return sources;
     }
+
+    private GeneratedSource renderProducer(AsyncApiDocument.Operation operation, GenerationOptions options, String payload, String headers) {
+        String name = operation.messageName() + "KafkaProducer";
+        String content = "package " + options.kafkaPackage() + ";\n\n"
+            + "import " + options.contractPackage() + "." + operation.messageName() + "Publisher;\n"
+            + "import " + options.contractPackage() + "." + headers + ";\n"
+            + "import " + options.contractPackage() + ".Channels;\n"
+            + "import " + options.modelPackage() + "." + payload + ";\n"
+            + "import org.springframework.kafka.core.KafkaTemplate;\n"
+            + "import org.springframework.stereotype.Component;\n\n"
+            + "@Component\npublic class " + name + " implements " + operation.messageName() + "Publisher {\n"
+            + "    private final KafkaTemplate<String, " + payload + "> kafkaTemplate;\n"
+            + "    public " + name + "(KafkaTemplate<String, " + payload + "> kafkaTemplate) { this.kafkaTemplate = kafkaTemplate; }\n"
+            + "    @Override public void send(" + payload + " payload, " + headers + " headers) { kafkaTemplate.send(Channels."
+            + ContractRenderer.channelConstant(operation.topic()) + ", payload); }\n}\n";
+        return new GeneratedSource(path(options.kafkaPackage(), name), content);
+    }
+
+    private GeneratedSource renderListenerAdapter(AsyncApiDocument.Operation operation, GenerationOptions options, String payload, String headers) {
+        String name = operation.messageName() + "KafkaListenerAdapter";
+        String channel = ContractRenderer.channelConstant(operation.topic());
+        String content = "package " + options.kafkaPackage() + ";\n\n"
+            + "import " + options.contractPackage() + "." + operation.messageName() + "Handler;\n"
+            + "import " + options.contractPackage() + "." + headers + ";\n"
+            + "import " + options.contractPackage() + ".MessageMetadata;\n"
+            + "import " + options.contractPackage() + ".Channels;\n"
+            + "import " + options.modelPackage() + "." + payload + ";\n"
+            + "import org.springframework.kafka.annotation.KafkaListener;\n"
+            + "import org.springframework.stereotype.Component;\n\n"
+            + "@Component\npublic class " + name + " {\n    private final " + operation.messageName() + "Handler handler;\n"
+            + "    public " + name + "(" + operation.messageName() + "Handler handler) { this.handler = handler; }\n"
+            + "    @KafkaListener(topics = Channels." + channel + ")\n"
+            + "    public void onMessage(" + payload + " payload) { handler.handle(payload, null, new MessageMetadata(Channels."
+            + channel + ", null)); }\n}\n";
+        return new GeneratedSource(path(options.kafkaPackage(), name), content);
+    }
+
     private String path(String packageName, String name) { return packageName.replace('.', '/') + "/" + name + ".java"; }
 }

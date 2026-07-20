@@ -6,7 +6,7 @@ channels:
   ordersCreated:
     address: orders.created
     bindings:
-      kafka: {}
+      kafka: { }
     messages:
       orderCreated:
         $ref: '#/components/messages/OrderCreated'
@@ -21,7 +21,7 @@ components:
   schemas:
     OrderCreatedPayload:
       type: object
-      required: [orderId, customerId, total]
+      required: [ orderId, customerId, total ]
       properties:
         orderId: { type: string }
         customerId: { type: string }
