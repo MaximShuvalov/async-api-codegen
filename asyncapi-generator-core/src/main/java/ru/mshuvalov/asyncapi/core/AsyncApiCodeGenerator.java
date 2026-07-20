@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Parses AsyncAPI 3.0 into a renderer-facing model and writes Java sources. */
 public final class AsyncApiCodeGenerator {
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     private final Map<TransportType, TransportRenderer> transportRenderers;
@@ -29,7 +28,6 @@ public final class AsyncApiCodeGenerator {
         this(List.of(new KafkaTransportRenderer()));
     }
 
-    /** Enables CLI/Maven/IDE integrations to provide additional transport renderers. */
     public AsyncApiCodeGenerator(Collection<? extends TransportRenderer> renderers) {
         Map<TransportType, TransportRenderer> registered = new LinkedHashMap<>();
         for (TransportRenderer renderer : renderers) {
@@ -95,19 +93,23 @@ public final class AsyncApiCodeGenerator {
         List<AsyncApiDocument.Operation> operations = new ArrayList<>();
         root.path("operations").fields().forEachRemaining(e -> {
             JsonNode operation = resolve(root, e.getValue());
-            operations.add(parseOperation(root, e.getKey(), operation));
+            if (operation.isMissingNode()) return;
+            AsyncApiDocument.Operation parsed = parseOperation(root, e.getKey(), operation);
+            if (parsed != null) operations.add(parsed);
         });
         return new AsyncApiDocument(Map.copyOf(schemas), List.copyOf(operations));
     }
 
     private AsyncApiDocument.Operation parseOperation(JsonNode root, String name, JsonNode raw) {
         JsonNode operation = resolve(root, raw);
+        if (operation.isMissingNode() || externalReference(operation.path("channel"))) return null;
         Action action = "send".equals(operation.path("action").asText()) ? Action.SEND : Action.RECEIVE;
         JsonNode channel = resolve(root, operation.path("channel"));
         String topic = channel.path("address").asText();
         if (topic.isBlank()) throw new IllegalArgumentException("Operation " + name + " has no channel address");
         JsonNode messages = operation.path("messages");
         JsonNode rawMessage = messages.isArray() && !messages.isEmpty() ? messages.get(0) : first(channel.path("messages"));
+        if (externalReference(rawMessage)) return null;
         JsonNode message = resolve(root, rawMessage);
         if (message.isMissingNode() || message.isNull()) throw new IllegalArgumentException("Operation " + name + " has no message");
         Set<String> transports = new java.util.LinkedHashSet<>();
@@ -117,9 +119,8 @@ public final class AsyncApiCodeGenerator {
         if (transports.isEmpty()) {
             throw new IllegalArgumentException("Operation " + name + " has no transport binding");
         }
-        // Keep payload/header references intact: renderers need their declared Java type,
-        // while the parser has already resolved the message and channel topology.
         JsonNode payload = message.path("payload");
+        if (externalReference(payload)) return null;
         return new AsyncApiDocument.Operation(name, action, topic, javaName(name), payload,
             resolve(root, message.path("headers")), Set.copyOf(transports),
             SchemaFormat.from(resolve(root, payload).path("schemaFormat").asText()));
@@ -134,11 +135,15 @@ public final class AsyncApiCodeGenerator {
         source.path("bindings").fieldNames().forEachRemaining(transports::add);
     }
 
+    private boolean externalReference(JsonNode node) {
+        return node.has("$ref") && !node.path("$ref").asText().startsWith("#/");
+    }
+
     static JsonNode resolve(JsonNode root, JsonNode node) {
         JsonNode current = node;
         while (current != null && current.has("$ref")) {
             String ref = current.path("$ref").asText();
-            if (!ref.startsWith("#/")) throw new IllegalArgumentException("External references are not supported: " + ref);
+            if (!ref.startsWith("#/")) return MissingNode.getInstance();
             current = root.at(ref.substring(1));
             if (current.isMissingNode()) throw new IllegalArgumentException("Unresolved reference: " + ref);
         }

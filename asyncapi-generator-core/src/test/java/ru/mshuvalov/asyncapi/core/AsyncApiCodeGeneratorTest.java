@@ -1,5 +1,6 @@
 package ru.mshuvalov.asyncapi.core;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,5 +26,22 @@ class AsyncApiCodeGeneratorTest {
         String model = Files.readString(output.resolve("example/generated/model/Order.java"));
         assertTrue(model.contains("byte[] raw"));
         assertTrue(model.contains("byte[] encoded"));
+    }
+
+    @Test void ignoresOperationsReferencedFromExternalFiles() throws Exception {
+        Path spec = Files.createTempFile("asyncapi", ".yaml");
+        Files.writeString(spec, """
+            asyncapi: 3.0.0
+            channels: { orders: { address: orders.created, bindings: { kafka: {} } } }
+            operations:
+              externalSend: { $ref: 'shared-operations.yaml#/sendOrder' }
+              sendOrder: { action: send, channel: { $ref: '#/channels/orders' }, messages: [{ payload: {} }] }
+            """);
+        Path output = Files.createTempDirectory("generated");
+
+        new AsyncApiCodeGenerator().generate(new GenerationRequest(spec, output, GenerationOptions.defaults("example.generated")));
+
+        assertTrue(Files.exists(output.resolve("example/generated/kafka/SendOrderKafkaProducer.java")));
+        assertFalse(Files.exists(output.resolve("example/generated/kafka/ExternalSendKafkaProducer.java")));
     }
 }
