@@ -6,7 +6,7 @@ stages:
 
 variables:
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
-  PUBLISH_VERSION: "0.1.0-SNAPSHOT"
+  PUBLISH_VERSION: "0.2.0-SNAPSHOT"
 
 cache:
   key: "gradle-$CI_COMMIT_REF_SLUG"
