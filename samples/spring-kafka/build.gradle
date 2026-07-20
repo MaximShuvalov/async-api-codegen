@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.4.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'ru.mshuvalov.asyncapi'
+}
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+
+repositories { mavenCentral() }
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.kafka:spring-kafka'
+}
+
+asyncApiSpring {
+    specification = layout.projectDirectory.file('src/main/asyncapi/orders.yaml')
+    basePackage = 'com.example.orders.generated'
+    transport = 'kafka'
+}

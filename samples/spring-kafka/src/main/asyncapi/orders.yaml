@@ -1,0 +1,34 @@
+asyncapi: 3.0.0
+info:
+  title: Orders events
+  version: 1.0.0
+channels:
+  ordersCreated:
+    address: orders.created
+    messages:
+      orderCreated:
+        $ref: '#/components/messages/OrderCreated'
+operations:
+  publishOrderCreated:
+    action: send
+    channel:
+      $ref: '#/channels/ordersCreated'
+    messages:
+      - $ref: '#/channels/ordersCreated/messages/orderCreated'
+components:
+  schemas:
+    OrderCreatedPayload:
+      type: object
+      required: [orderId, customerId, total]
+      properties:
+        orderId: { type: string }
+        customerId: { type: string }
+        total: { type: number }
+  messages:
+    OrderCreated:
+      payload:
+        $ref: '#/components/schemas/OrderCreatedPayload'
+      headers:
+        type: object
+        properties:
+          correlationId: { type: string }

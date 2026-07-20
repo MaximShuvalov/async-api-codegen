@@ -1,0 +1,4 @@
+rootProject.name = 'asyncapi-spring-codegen'
+
+include 'asyncapi-generator-core'
+include 'asyncapi-gradle-plugin'
