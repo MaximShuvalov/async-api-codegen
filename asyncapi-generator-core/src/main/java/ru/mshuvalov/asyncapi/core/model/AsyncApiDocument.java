@@ -7,6 +7,6 @@ import java.util.Map;
 public record AsyncApiDocument(Map<String, JsonNode> schemas, List<Operation> operations) {
     /** Transport names come from standard bindings attached to this operation's channel, operation, or message. */
     public record Operation(String name, Action action, String topic, String messageName, JsonNode payload, JsonNode headers,
-                            java.util.Set<String> transports) { }
+                            java.util.Set<String> transports, ru.mshuvalov.asyncapi.core.SchemaFormat payloadFormat) { }
     public enum Action { SEND, RECEIVE }
 }

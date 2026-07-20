@@ -14,7 +14,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import java.util.Set;
 
 /** Parses AsyncAPI 3.0 into a renderer-facing model and writes Java sources. */
@@ -29,7 +28,12 @@ public final class AsyncApiCodeGenerator {
         AsyncApiDocument document = parse(root);
         List<GeneratedSource> sources = new ArrayList<>();
         GenerationOptions options = request.options();
-        if (options.generateModels()) sources.addAll(new JavaModelRenderer().render(document, options.modelPackage()));
+        validateSchemaFormats(document);
+        if (options.generateModels()) {
+            for (SchemaRenderer renderer : List.of(new JsonSchemaModelRenderer(), new AvroModelRenderer())) {
+                sources.addAll(renderer.render(document.schemas(), options));
+            }
+        }
         if (options.generateContracts()) sources.addAll(new ContractRenderer().render(document, options.contractPackage(), options.modelPackage()));
         for (TransportRenderer renderer : renderers(document)) {
             sources.addAll(renderer.render(document, options));
@@ -52,6 +56,18 @@ public final class AsyncApiCodeGenerator {
             }
         }
         return List.copyOf(selected.values());
+    }
+
+    private void validateSchemaFormats(AsyncApiDocument document) {
+        for (AsyncApiDocument.Operation operation : document.operations()) {
+            if (operation.payloadFormat() == SchemaFormat.PROTOBUF) {
+                throw new IllegalArgumentException("Operation " + operation.name()
+                    + " uses Protobuf. Add a Protobuf SchemaRenderer/protoc integration before generating this contract.");
+            }
+            if (operation.payloadFormat() == SchemaFormat.UNKNOWN) {
+                throw new IllegalArgumentException("Operation " + operation.name() + " uses an unknown payload schema format");
+            }
+        }
     }
 
     private AsyncApiDocument parse(JsonNode root) {
@@ -84,8 +100,10 @@ public final class AsyncApiCodeGenerator {
         }
         // Keep payload/header references intact: renderers need their declared Java type,
         // while the parser has already resolved the message and channel topology.
-        return new AsyncApiDocument.Operation(name, action, topic, javaName(name), message.path("payload"),
-            resolve(root, message.path("headers")), Set.copyOf(transports));
+        JsonNode payload = message.path("payload");
+        return new AsyncApiDocument.Operation(name, action, topic, javaName(name), payload,
+            resolve(root, message.path("headers")), Set.copyOf(transports),
+            SchemaFormat.from(resolve(root, payload).path("schemaFormat").asText()));
     }
 
     private JsonNode first(JsonNode node) {

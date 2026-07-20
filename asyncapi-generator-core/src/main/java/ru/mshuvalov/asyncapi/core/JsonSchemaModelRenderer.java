@@ -1,17 +1,20 @@
 package ru.mshuvalov.asyncapi.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import ru.mshuvalov.asyncapi.core.model.AsyncApiDocument;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-final class JavaModelRenderer {
-    List<GeneratedSource> render(AsyncApiDocument document, String modelPackage) {
+final class JsonSchemaModelRenderer implements SchemaRenderer {
+    @Override public SchemaFormat format() { return SchemaFormat.ASYNCAPI_SCHEMA; }
+
+    @Override public List<GeneratedSource> render(Map<String, JsonNode> schemas, GenerationOptions options) {
         List<GeneratedSource> result = new ArrayList<>();
-        for (Map.Entry<String, JsonNode> schema : document.schemas().entrySet()) {
+        for (Map.Entry<String, JsonNode> schema : schemas.entrySet()) {
+            if (SchemaFormat.from(schema.getValue().path("schemaFormat").asText()) != format()) continue;
             String name = AsyncApiCodeGenerator.javaName(schema.getKey());
-            result.add(source(modelPackage, name, renderType(modelPackage, name, schema.getValue())));
+            JsonNode schemaNode = schema.getValue().has("schemaFormat") ? schema.getValue().path("schema") : schema.getValue();
+            result.add(source(options.modelPackage(), name, renderType(options.modelPackage(), name, schemaNode)));
         }
         return result;
     }

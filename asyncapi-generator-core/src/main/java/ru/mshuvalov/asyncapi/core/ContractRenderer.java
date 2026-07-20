@@ -30,6 +30,12 @@ final class ContractRenderer {
             String ref = payload.path("$ref").asText();
             return "" + AsyncApiCodeGenerator.javaName(ref.substring(ref.lastIndexOf('/') + 1));
         }
+        if (payload.has("schemaFormat")) {
+            JsonNode schema = payload.path("schema");
+            if (SchemaFormat.from(payload.path("schemaFormat").asText()) == SchemaFormat.AVRO) {
+                return AsyncApiCodeGenerator.javaName(schema.path("name").asText("Object"));
+            }
+        }
         return "Object";
     }
     private static String headerFields(JsonNode headers) {
