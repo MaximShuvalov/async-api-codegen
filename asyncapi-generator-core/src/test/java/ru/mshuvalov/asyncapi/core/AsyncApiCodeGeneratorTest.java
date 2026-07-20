@@ -21,6 +21,7 @@ class AsyncApiCodeGeneratorTest {
         new AsyncApiCodeGenerator().generate(new GenerationRequest(spec, output, GenerationOptions.defaults("example.generated")));
         assertTrue(Files.exists(output.resolve("example/generated/model/Order.java")));
         assertTrue(Files.exists(output.resolve("example/generated/kafka/SendOrderKafkaProducer.java")));
+        assertTrue(Files.readString(output.resolve("example/generated/contract/Channels.java")).contains("ORDERS"));
         String model = Files.readString(output.resolve("example/generated/model/Order.java"));
         assertTrue(model.contains("byte[] raw"));
         assertTrue(model.contains("byte[] encoded"));

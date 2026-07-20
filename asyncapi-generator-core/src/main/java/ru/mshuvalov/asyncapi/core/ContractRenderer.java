@@ -9,6 +9,7 @@ final class ContractRenderer {
     List<GeneratedSource> render(AsyncApiDocument document, String contractPackage, String modelPackage) {
         List<GeneratedSource> sources = new ArrayList<>();
         sources.add(new GeneratedSource(path(contractPackage, "MessageMetadata"), "package " + contractPackage + ";\n\npublic record MessageMetadata(String topic, String key) { }\n"));
+        sources.add(new GeneratedSource(path(contractPackage, "Channels"), renderChannels(document, contractPackage)));
         for (AsyncApiDocument.Operation op : document.operations()) {
             String payload = payloadType(op.payload());
             String headers = op.messageName() + "Headers";
@@ -42,6 +43,25 @@ final class ContractRenderer {
         List<String> fields = new ArrayList<>();
         headers.path("properties").fields().forEachRemaining(e -> fields.add(headerType(e.getValue()) + " " + e.getKey()));
         return String.join(", ", fields);
+    }
+    static String channelConstant(String topic) {
+        String constant = topic.replaceAll("[^A-Za-z0-9]", "_").replaceAll("_+", "_").toUpperCase(java.util.Locale.ROOT);
+        if (constant.isEmpty() || Character.isDigit(constant.charAt(0))) constant = "CHANNEL_" + constant;
+        return constant;
+    }
+    private String renderChannels(AsyncApiDocument document, String contractPackage) {
+        java.util.Map<String, String> names = new java.util.LinkedHashMap<>();
+        java.util.Set<String> used = new java.util.HashSet<>();
+        for (AsyncApiDocument.Operation operation : document.operations()) {
+            if (names.containsKey(operation.topic())) continue;
+            String base = channelConstant(operation.topic());
+            if (!used.add(base)) throw new IllegalArgumentException("Channel constant name collision for topic: " + operation.topic());
+            names.put(operation.topic(), base);
+        }
+        StringBuilder constants = new StringBuilder();
+        names.forEach((topic, name) -> constants.append("    public static final String ").append(name).append(" = \"")
+            .append(topic.replace("\\", "\\\\").replace("\"", "\\\"")).append("\";\n"));
+        return "package " + contractPackage + ";\n\npublic final class Channels {\n    private Channels() { }\n\n" + constants + "}\n";
     }
     private static String headerType(JsonNode schema) {
         return switch (schema.path("type").asText("object")) {
