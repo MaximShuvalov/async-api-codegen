@@ -17,7 +17,7 @@ dependencies {
 gradlePlugin {
     plugins {
         asyncApiSpring {
-            id = 'ru.mshuvalov.asyncapi'
+            id = 'ru.mshuvalov.asyncapi.codegen'
             implementationClass = 'ru.mshuvalov.asyncapi.gradle.AsyncApiSpringPlugin'
             displayName = 'AsyncAPI Spring code generator'
             description = 'Generates Spring messaging code from AsyncAPI documents.'
