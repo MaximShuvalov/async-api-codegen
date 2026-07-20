@@ -1,17 +1,17 @@
-# AsyncAPI Spring code generator
+# Генератор кода AsyncAPI для Spring
 
-Multi-module Gradle project that generates Java 21/Spring messaging code from AsyncAPI 3.0 documents.
+Многомодульный Gradle-проект, генерирующий Java 21-код для обмена сообщениями в Spring на основе документов AsyncAPI 3.0.
 
-## Modules
+## Модули
 
-* `asyncapi-generator-core` — Gradle-independent parser, internal model and Java renderers.
-* `asyncapi-gradle-plugin` — `ru.mshuvalov.asyncapi` plugin and cacheable `generateAsyncApi` task.
-* `samples/spring-kafka` — a working Kafka/Spring Boot configuration.
+* `asyncapi-generator-core` — независимые от Gradle парсер, внутренняя модель и Java-рендереры.
+* `asyncapi-gradle-plugin` — плагин `ru.mshuvalov.asyncapi` и кэшируемая задача `generateAsyncApi`.
+* `samples/spring-kafka` — рабочая конфигурация Kafka/Spring Boot.
 
-## Usage
+## Использование
 
 ```groovy
-plugins { id 'ru.mshuvalov.asyncapi' version '0.1.0' }
+plugins { id 'ru.mshuvalov.asyncapi.codegen' version '0.1.0' }
 
 asyncApiSpring {
   specification = layout.projectDirectory.file('src/main/asyncapi/api.yaml')
@@ -25,12 +25,12 @@ asyncApiSpring {
 }
 ```
 
-The task writes only to `build/generated/sources/asyncapi/java/main`; this directory is added to `main` sources automatically. The transport is inferred per operation only from standard AsyncAPI `bindings` on its channel, operation, or message. The MVP recognizes `kafka`; an operation with an unsupported binding fails with its name and binding value. `send` operations yield publisher contracts and Kafka producers; `receive` operations yield handler contracts and listener adapters.
+Задача записывает файлы только в `build/generated/sources/asyncapi/java/main`; этот каталог автоматически добавляется к исходникам `main`. Транспорт определяется для каждой операции исключительно по стандартным AsyncAPI `bindings` её канала, операции или сообщения. В MVP поддерживается `kafka`; операция с неподдерживаемым binding завершается ошибкой с именем операции и значением binding. Операции `send` создают контракты издателя и Kafka-продюсеры, а `receive` — контракты обработчика и адаптеры listener.
 
-`generateModel`, `generateContract`, `generateProducer`, and `generateConsumer` control artifact categories. Contracts must remain enabled when a producer or consumer is generated. By default packages are `<basePackage>.model`, `.contract`, and `.kafka`.
+Параметры `generateModel`, `generateContract`, `generateProducer` и `generateConsumer` определяют, какие категории артефактов создавать. При генерации продюсера или consumer контракты должны оставаться включёнными. По умолчанию используются пакеты `<basePackage>.model`, `.contract` и `.kafka`.
 
-The plugin also supports Kotlin/JVM Spring projects: it generates Java types into the regular `main` Java source set and makes `compileKotlin` depend on `generateAsyncApi`.
+Плагин также поддерживает Spring-проекты на Kotlin/JVM: он генерирует Java-типы в обычный набор исходников Java `main` и делает `compileKotlin` зависимой от `generateAsyncApi`.
 
-## MVP support and limits
+## Поддержка и ограничения MVP
 
-Supports AsyncAPI 3.0 operations, channels, inline/component messages, `$ref`, object/array/map/primitive JSON Schema, enums, nullable fields, typed headers and Kafka topic bindings. JSON Schema strings with `format: byte` or `binary`, or `contentEncoding: base64`, are generated as `byte[]`. It deliberately does not generate validation annotations, polymorphic schemas (`oneOf`/`allOf`) or user business handlers. AsyncAPI 2 support is reserved for a future adapter to the same internal model.
+Поддерживаются операции и каналы AsyncAPI 3.0, встроенные и компонентные сообщения, `$ref`, JSON Schema для объектов, массивов, карт и примитивов, enum, допускающие `null` поля, типизированные заголовки и Kafka topic bindings. Строки JSON Schema с `format: byte` или `binary`, а также с `contentEncoding: base64`, генерируются как `byte[]`. Намеренно не создаются аннотации валидации, полиморфные схемы (`oneOf`/`allOf`) и пользовательские обработчики бизнес-логики. Поддержка AsyncAPI 2 предусмотрена для будущего адаптера к той же внутренней модели.
