@@ -19,7 +19,7 @@ final class ContractRenderer {
             String method = op.action() == AsyncApiDocument.Action.SEND
                 ? "void send(" + payload + " payload, " + headers + " headers);"
                 : "void handle(" + payload + " payload, " + headers + " headers, MessageMetadata metadata);";
-            String modelImport = op.payload().has("$ref") ? "import " + modelPackage + "." + payload + ";\n" : "";
+            String modelImport = requiresModelImport(op.payload()) ? "import " + modelPackage + "." + payload + ";\n" : "";
             String content = "package " + contractPackage + ";\n\n" + modelImport + "\npublic interface " + name + " {\n    " + method + "\n}\n";
             sources.add(new GeneratedSource(path(contractPackage, name), content));
             String headerContent = "package " + contractPackage + ";\n\npublic record " + headers + "(" + headerFields(op.headers()) + ") { }\n";
@@ -33,14 +33,16 @@ final class ContractRenderer {
             String ref = payload.path("$ref").asText();
             return AsyncApiCodeGenerator.javaName(ref.substring(ref.lastIndexOf('/') + 1));
         }
+        JsonNode schema = payload.has("schemaFormat") ? payload.path("schema") : payload;
         if (payload.has("schemaFormat")) {
-            JsonNode schema = payload.path("schema");
             if (SchemaFormat.from(payload.path("schemaFormat").asText()) == SchemaFormat.AVRO) {
                 return AsyncApiCodeGenerator.javaName(schema.path("name").asText("Object"));
             }
         }
+        if ("string".equals(schema.path("type").asText()) && isByteArray(schema)) return "byte[]";
         return "Object";
     }
+    static boolean requiresModelImport(JsonNode payload) { return payload.has("$ref"); }
     private static String headerFields(JsonNode headers) {
         List<String> fields = new ArrayList<>();
         headers.path("properties").fields().forEachRemaining(e -> fields.add(headerType(e.getValue()) + " " + e.getKey()));

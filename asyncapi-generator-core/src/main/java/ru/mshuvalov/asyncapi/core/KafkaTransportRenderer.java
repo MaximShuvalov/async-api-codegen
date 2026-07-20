@@ -30,7 +30,7 @@ final class KafkaTransportRenderer implements TransportRenderer {
             + "import " + options.contractPackage() + "." + operation.messageName() + "Publisher;\n"
             + "import " + options.contractPackage() + "." + headers + ";\n"
             + "import " + options.contractPackage() + ".Channels;\n"
-            + "import " + options.modelPackage() + "." + payload + ";\n"
+            + (ContractRenderer.requiresModelImport(operation.payload()) ? "import " + options.modelPackage() + "." + payload + ";\n" : "")
             + "import org.springframework.kafka.core.KafkaTemplate;\n"
             + "import org.springframework.stereotype.Component;\n\n"
             + "@Component\npublic class " + name + " implements " + operation.messageName() + "Publisher {\n"
@@ -49,7 +49,7 @@ final class KafkaTransportRenderer implements TransportRenderer {
             + "import " + options.contractPackage() + "." + headers + ";\n"
             + "import " + options.contractPackage() + ".MessageMetadata;\n"
             + "import " + options.contractPackage() + ".Channels;\n"
-            + "import " + options.modelPackage() + "." + payload + ";\n"
+            + (ContractRenderer.requiresModelImport(operation.payload()) ? "import " + options.modelPackage() + "." + payload + ";\n" : "")
             + "import org.springframework.kafka.annotation.KafkaListener;\n"
             + "import org.springframework.stereotype.Component;\n\n"
             + "@Component\npublic class " + name + " {\n    private final " + operation.messageName() + "Handler handler;\n"
