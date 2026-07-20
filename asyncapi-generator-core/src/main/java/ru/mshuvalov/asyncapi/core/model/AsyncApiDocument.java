@@ -3,9 +3,10 @@ package ru.mshuvalov.asyncapi.core.model;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-public record AsyncApiDocument(Map<String, JsonNode> schemas, List<Operation> operations, Set<String> transports) {
-    public record Operation(String name, Action action, String topic, String messageName, JsonNode payload, JsonNode headers) { }
+public record AsyncApiDocument(Map<String, JsonNode> schemas, List<Operation> operations) {
+    /** Transport names come from standard bindings attached to this operation's channel, operation, or message. */
+    public record Operation(String name, Action action, String topic, String messageName, JsonNode payload, JsonNode headers,
+                            java.util.Set<String> transports) { }
     public enum Action { SEND, RECEIVE }
 }

@@ -7,18 +7,11 @@ import java.util.List;
 import java.util.Map;
 
 final class JavaModelRenderer {
-    private final JsonNode root;
-    JavaModelRenderer(JsonNode root) { this.root = root; }
-
-    List<GeneratedSource> render(AsyncApiDocument document, String basePackage) {
+    List<GeneratedSource> render(AsyncApiDocument document, String modelPackage) {
         List<GeneratedSource> result = new ArrayList<>();
         for (Map.Entry<String, JsonNode> schema : document.schemas().entrySet()) {
             String name = AsyncApiCodeGenerator.javaName(schema.getKey());
-            result.add(source(basePackage, "model", name, renderType(basePackage, name, schema.getValue())));
-        }
-        for (AsyncApiDocument.Operation operation : document.operations()) {
-            String headers = operation.messageName() + "Headers";
-            result.add(source(basePackage, "contract", headers, renderHeaders(basePackage, headers, operation.headers())));
+            result.add(source(modelPackage, name, renderType(modelPackage, name, schema.getValue())));
         }
         return result;
     }
@@ -27,13 +20,9 @@ final class JavaModelRenderer {
         if (schema.path("enum").isArray()) {
             List<String> constants = new ArrayList<>();
             schema.path("enum").forEach(v -> constants.add(v.asText().replaceAll("[^A-Za-z0-9]", "_").toUpperCase()));
-            return "package " + basePackage + ".model;\n\npublic enum " + name + " { " + String.join(", ", constants) + " }\n";
+        return "package " + basePackage + ";\n\npublic enum " + name + " { " + String.join(", ", constants) + " }\n";
         }
-        return "package " + basePackage + ".model;\n\npublic record " + name + "(" + fields(schema) + ") { }\n";
-    }
-
-    private String renderHeaders(String basePackage, String name, JsonNode headers) {
-        return "package " + basePackage + ".contract;\n\npublic record " + name + "(" + fields(headers) + ") { }\n";
+        return "package " + basePackage + ";\n\npublic record " + name + "(" + fields(schema) + ") { }\n";
     }
 
     private String fields(JsonNode schema) {
@@ -50,7 +39,7 @@ final class JavaModelRenderer {
         }
         if (schema.has("enum")) return AsyncApiCodeGenerator.javaName(schema.path("title").asText("Value"));
         return switch (schema.path("type").asText("object")) {
-            case "string" -> "String";
+            case "string" -> isByteArray(schema) ? "byte[]" : "String";
             case "integer" -> schema.path("format").asText().equals("int64") ? "Long" : "Integer";
             case "number" -> schema.path("format").asText().equals("float") ? "Float" : "Double";
             case "boolean" -> "Boolean";
@@ -60,11 +49,16 @@ final class JavaModelRenderer {
         };
     }
 
+    private boolean isByteArray(JsonNode schema) {
+        String format = schema.path("format").asText();
+        return "byte".equals(format) || "binary".equals(format) || "base64".equals(schema.path("contentEncoding").asText());
+    }
+
     private String safeField(String value) {
         return switch (value) { case "class", "record", "enum", "package", "public", "private" -> value + "Value"; default -> value; };
     }
 
-    private GeneratedSource source(String base, String part, String name, String content) {
-        return new GeneratedSource(base.replace('.', '/') + "/" + part + "/" + name + ".java", content);
+    private GeneratedSource source(String packageName, String name, String content) {
+        return new GeneratedSource(packageName.replace('.', '/') + "/" + name + ".java", content);
     }
 }

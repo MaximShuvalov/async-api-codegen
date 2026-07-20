@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 /** Parses AsyncAPI 3.0 into a renderer-facing model and writes Java sources. */
@@ -27,33 +28,41 @@ public final class AsyncApiCodeGenerator {
         }
         AsyncApiDocument document = parse(root);
         List<GeneratedSource> sources = new ArrayList<>();
-        sources.addAll(new JavaModelRenderer(root).render(document, request.basePackage()));
-        sources.addAll(new ContractRenderer().render(document, request.basePackage()));
-        sources.addAll(renderer(document).render(document, request.basePackage()));
+        GenerationOptions options = request.options();
+        if (options.generateModels()) sources.addAll(new JavaModelRenderer().render(document, options.modelPackage()));
+        if (options.generateContracts()) sources.addAll(new ContractRenderer().render(document, options.contractPackage(), options.modelPackage()));
+        for (TransportRenderer renderer : renderers(document)) {
+            sources.addAll(renderer.render(document, options));
+        }
         write(sources, request.outputDirectory());
         return List.copyOf(sources);
     }
 
-    private TransportRenderer renderer(AsyncApiDocument document) {
-        if (document.transports().contains("kafka")) return new KafkaTransportRenderer();
-        throw new IllegalArgumentException("No supported transport binding found. Add a Kafka binding to the channel, operation, or message.");
+    private List<TransportRenderer> renderers(AsyncApiDocument document) {
+        Map<String, TransportRenderer> registered = Map.of("kafka", new KafkaTransportRenderer());
+        Map<String, TransportRenderer> selected = new LinkedHashMap<>();
+        for (AsyncApiDocument.Operation operation : document.operations()) {
+            for (String transport : operation.transports()) {
+                TransportRenderer renderer = registered.get(transport);
+                if (renderer == null) {
+                    throw new IllegalArgumentException("Operation " + operation.name()
+                        + " uses unsupported transport binding: " + transport);
+                }
+                selected.putIfAbsent(transport, renderer);
+            }
+        }
+        return List.copyOf(selected.values());
     }
 
     private AsyncApiDocument parse(JsonNode root) {
         Map<String, JsonNode> schemas = new LinkedHashMap<>();
         root.path("components").path("schemas").fields().forEachRemaining(e -> schemas.put(e.getKey(), e.getValue()));
         List<AsyncApiDocument.Operation> operations = new ArrayList<>();
-        Set<String> transports = new java.util.LinkedHashSet<>();
         root.path("operations").fields().forEachRemaining(e -> {
             JsonNode operation = resolve(root, e.getValue());
-            JsonNode channel = resolve(root, operation.path("channel"));
-            bindingNames(channel, transports);
-            bindingNames(operation, transports);
-            JsonNode messages = operation.path("messages");
-            if (messages.isArray()) messages.forEach(message -> bindingNames(resolve(root, message), transports));
             operations.add(parseOperation(root, e.getKey(), operation));
         });
-        return new AsyncApiDocument(Map.copyOf(schemas), List.copyOf(operations), Set.copyOf(transports));
+        return new AsyncApiDocument(Map.copyOf(schemas), List.copyOf(operations));
     }
 
     private AsyncApiDocument.Operation parseOperation(JsonNode root, String name, JsonNode raw) {
@@ -66,9 +75,17 @@ public final class AsyncApiCodeGenerator {
         JsonNode rawMessage = messages.isArray() && !messages.isEmpty() ? messages.get(0) : first(channel.path("messages"));
         JsonNode message = resolve(root, rawMessage);
         if (message.isMissingNode() || message.isNull()) throw new IllegalArgumentException("Operation " + name + " has no message");
+        Set<String> transports = new java.util.LinkedHashSet<>();
+        bindingNames(channel, transports);
+        bindingNames(operation, transports);
+        bindingNames(message, transports);
+        if (transports.isEmpty()) {
+            throw new IllegalArgumentException("Operation " + name + " has no transport binding");
+        }
         // Keep payload/header references intact: renderers need their declared Java type,
         // while the parser has already resolved the message and channel topology.
-        return new AsyncApiDocument.Operation(name, action, topic, javaName(name), message.path("payload"), resolve(root, message.path("headers")));
+        return new AsyncApiDocument.Operation(name, action, topic, javaName(name), message.path("payload"),
+            resolve(root, message.path("headers")), Set.copyOf(transports));
     }
 
     private JsonNode first(JsonNode node) {

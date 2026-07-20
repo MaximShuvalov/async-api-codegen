@@ -15,11 +15,14 @@ class AsyncApiCodeGeneratorTest {
               sendOrder: { action: send, channel: { $ref: '#/channels/orders' }, messages: [{ payload: { $ref: '#/components/schemas/Order' } }] }
             components:
               schemas:
-                Order: { type: object, properties: { id: { type: string } } }
+                Order: { type: object, properties: { id: { type: string }, raw: { type: string, format: byte }, encoded: { type: string, contentEncoding: base64 } } }
             """);
         Path output = Files.createTempDirectory("generated");
-        new AsyncApiCodeGenerator().generate(new GenerationRequest(spec, output, "example.generated"));
+        new AsyncApiCodeGenerator().generate(new GenerationRequest(spec, output, GenerationOptions.defaults("example.generated")));
         assertTrue(Files.exists(output.resolve("example/generated/model/Order.java")));
         assertTrue(Files.exists(output.resolve("example/generated/kafka/SendOrderKafkaProducer.java")));
+        String model = Files.readString(output.resolve("example/generated/model/Order.java"));
+        assertTrue(model.contains("byte[] raw"));
+        assertTrue(model.contains("byte[] encoded"));
     }
 }

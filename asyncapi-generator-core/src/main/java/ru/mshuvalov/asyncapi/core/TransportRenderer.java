@@ -6,5 +6,5 @@ import java.util.List;
 /** Extension point for transport-specific adapters. */
 public interface TransportRenderer {
     String transport();
-    List<GeneratedSource> render(AsyncApiDocument document, String basePackage);
+    List<GeneratedSource> render(AsyncApiDocument document, GenerationOptions options);
 }
