@@ -1,34 +1,72 @@
-# Генератор кода AsyncAPI для Spring
+# AsyncAPI Spring Code Generator
 
-Генератор кода на основе AsyncAPI
+Gradle-плагин, который генерирует Java код для Spring Kafka из документа AsyncAPI 3.0. Генерация выполняется задачей `generateAsyncApi` и записывается в `build/generated/sources/asyncapi/java/main`; каталог автоматически подключается к исходникам `main`.
 
-## Модули
+Проект состоит из:
 
-* `asyncapi-generator-core` — независимые от Gradle парсер, внутренняя модель и Java-рендереры.
-* `asyncapi-gradle-plugin` — плагин `ru.mshuvalov.asyncapi` и кэшируемая задача `generateAsyncApi`.
-* `samples/spring-kafka` — рабочая конфигурация Kafka/Spring Boot.
+* `asyncapi-generator-core` — парсинг AsyncAPI и рендеринг исходников;
+* `asyncapi-gradle-plugin` — Gradle-плагин `ru.mshuvalov.asyncapi.codegen`;
+* `samples/spring-kafka` — пример Spring Boot/Kafka-проекта.
 
-## Использование
+## Подключение
 
 ```groovy
-plugins { id 'ru.mshuvalov.asyncapi.codegen' version '0.1.0' }
+plugins {
+  id 'ru.mshuvalov.asyncapi.codegen' version '0.1.0'
+}
 
 asyncApiSpring {
-  specification = layout.projectDirectory.file('src/main/asyncapi/api.yaml')
-  basePackage = 'com.example.generated'
+  specification = layout.projectDirectory.file('src/main/asyncapi/orders.yaml')
+  basePackage = 'com.example.orders.generated'
+
+  // Необязательные настройки.
+  kafkaPackage('com.example.orders.messaging.kafka')
   generateModel(true)
   generateProducer(true)
-  generateConsumer(false)
-  kafkaPackage('com.example.infrastructure.kafka')
+  generateConsumer(true)
 }
 ```
 
-Задача записывает файлы только в `build/generated/sources/asyncapi/java/main`; этот каталог автоматически добавляется к исходникам `main`. Транспорт определяется для каждой операции исключительно по стандартным AsyncAPI `bindings` её канала, операции или сообщения. В MVP поддерживается `kafka`; операция с неподдерживаемым binding завершается ошибкой с именем операции и значением binding. Операции `send` создают Kafka publisher и продюсеры, а `receive` — Kafka handler и адаптеры listener.
+По умолчанию `basePackage` равен `generated.asyncapi`, `specification` — `src/main/asyncapi/asyncapi.yaml`, а `kafkaPackage` — `<basePackage>.kafka`.
 
-Параметры `generateModel`, `generateProducer` и `generateConsumer` определяют, какие категории артефактов создавать. Все Kafka-артефакты находятся под `<basePackage>.kafka`: payload-схемы — в `.kafka.dto`, а `Channels`, metadata, headers, publisher/handler, producer и listener — непосредственно в `.kafka`. При отключённом producer или consumer не создаются соответствующие `send`- или `receive`-артефакты. Отдельные общие пакеты моделей или контрактов не создаются.
+Плагин подключает `generateAsyncApi` к `compileJava`. В Kotlin/JVM-проектах `compileKotlin` также зависит от этой задачи.
 
-Плагин также поддерживает Spring-проекты на Kotlin/JVM: он генерирует Java-типы в обычный набор исходников Java `main` и делает `compileKotlin` зависимой от `generateAsyncApi`.
+## Структура сгенерированного кода
 
-## Поддержка и ограничения MVP
+Генератор не создаёт общий слой `contract` или `model`. Все типы, относящиеся к транспорту, находятся под `kafkaPackage`:
 
-Поддерживаются операции и каналы AsyncAPI 3.0, встроенные и компонентные сообщения, `$ref`, JSON Schema для объектов, массивов, карт и примитивов, enum, допускающие `null` поля, типизированные заголовки и Kafka topic bindings. Строки JSON Schema с `format: byte` или `binary`, а также с `contentEncoding: base64`, генерируются как `byte[]`. Намеренно не создаются аннотации валидации, полиморфные схемы (`oneOf`/`allOf`) и пользовательские обработчики бизнес-логики. Поддержка AsyncAPI 2 предусмотрена для будущего адаптера к той же внутренней модели.
+```text
+com.example.orders.messaging.kafka
+├── Channels.java
+├── MessageMetadata.java
+├── PublishOrderPublisher.java
+├── PublishOrderHeaders.java
+├── PublishOrderKafkaProducer.java
+├── ConsumeOrderHandler.java
+├── ConsumeOrderHeaders.java
+├── ConsumeOrderKafkaListenerAdapter.java
+└── dto/
+    └── OrderPayload.java
+```
+
+`dto` содержит схемы payload. В корневом пакете Kafka размещаются константы каналов, headers, publisher/handler и Spring Kafka adapter-ы.
+
+Флаги управления генерацией:
+
+* `generateModel(boolean)` — генерировать payload DTO;
+* `generateProducer(boolean)` — генерировать только артефакты операций `send`: publisher, headers и Kafka producer;
+* `generateConsumer(boolean)` — генерировать только артефакты операций `receive`: handler, headers и Kafka listener adapter.
+
+Если направление отключено, его operation-specific типы не создаются. `Channels` и `MessageMetadata` создаются, когда включено хотя бы одно направление.
+
+## Поддерживаемый AsyncAPI
+
+Поддерживается AsyncAPI 3.0: операции, каналы, встроенные и компонентные сообщения, локальные `$ref`, JSON Schema для объектов, массивов, map и примитивов, enum, nullable-поля, типизированные headers и Kafka bindings на канале, операции или сообщении.
+
+Транспорт определяется по стандартному `bindings`. Сейчас поддерживается только `kafka`; операция с другим binding завершается ошибкой.
+
+Для строковых схем `format: byte`, `format: binary` и `contentEncoding: base64` генерируется `byte[]`, в том числе для inline payload. Поддерживаются component Avro record/enum-схемы.
+
+## Ограничения
+
+Не поддерживаются AsyncAPI 2.x, `oneOf`/`allOf`, аннотации валидации, пользовательская бизнес-логика и Protobuf без отдельного `SchemaRenderer`/интеграции с `protoc`.

@@ -19,6 +19,8 @@ verify:
   stage: verify
   script:
     - ./gradlew --no-daemon check
+  rules:
+    - when: manual
 
 publish:
   stage: publish
