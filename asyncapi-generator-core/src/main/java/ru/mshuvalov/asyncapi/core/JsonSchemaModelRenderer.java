@@ -6,14 +6,15 @@ import ru.mshuvalov.asyncapi.core.model.SchemaFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 final class JsonSchemaModelRenderer implements SchemaRenderer {
-    @Override public SchemaFormat format() { return SchemaFormat.ASYNCAPI_SCHEMA; }
+    @Override public Set<SchemaFormat> supportedFormats() { return Set.of(SchemaFormat.ASYNCAPI_SCHEMA, SchemaFormat.JSON_SCHEMA); }
 
     @Override public List<GeneratedSource> render(Map<String, JsonNode> schemas, GenerationOptions options) {
         List<GeneratedSource> result = new ArrayList<>();
         for (Map.Entry<String, JsonNode> schema : schemas.entrySet()) {
-            if (SchemaFormat.from(schema.getValue().path("schemaFormat").asText()) != format()) continue;
+            if (!supportedFormats().contains(SchemaFormat.from(schema.getValue().path("schemaFormat").asText()))) continue;
             String name = AsyncApiCodeGenerator.javaName(schema.getKey());
             JsonNode schemaNode = schema.getValue().has("schemaFormat") ? schema.getValue().path("schema") : schema.getValue();
             result.add(source(options.modelPackage(), name, renderType(options.modelPackage(), name, schemaNode)));

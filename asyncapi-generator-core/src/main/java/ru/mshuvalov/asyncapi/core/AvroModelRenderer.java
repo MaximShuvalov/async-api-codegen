@@ -9,13 +9,13 @@ import java.util.Map;
 
 /** Minimal native Avro-to-record renderer for inline AsyncAPI Avro schemas. */
 final class AvroModelRenderer implements SchemaRenderer {
-    @Override public SchemaFormat format() { return SchemaFormat.AVRO; }
+    @Override public java.util.Set<SchemaFormat> supportedFormats() { return java.util.Set.of(SchemaFormat.AVRO); }
 
     @Override public List<GeneratedSource> render(Map<String, JsonNode> schemas, GenerationOptions options) {
         List<GeneratedSource> result = new ArrayList<>();
         for (Map.Entry<String, JsonNode> entry : schemas.entrySet()) {
             JsonNode wrapper = entry.getValue();
-            if (SchemaFormat.from(wrapper.path("schemaFormat").asText()) != format()) continue;
+            if (!supportedFormats().contains(SchemaFormat.from(wrapper.path("schemaFormat").asText()))) continue;
             JsonNode schema = wrapper.path("schema");
             String name = AsyncApiCodeGenerator.javaName(schema.path("name").asText(entry.getKey()));
             if ("record".equals(schema.path("type").asText())) {

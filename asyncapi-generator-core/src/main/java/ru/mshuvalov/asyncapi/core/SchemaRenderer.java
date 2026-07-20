@@ -5,9 +5,10 @@ import ru.mshuvalov.asyncapi.core.model.SchemaFormat;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Renders one schema language into Java types; independent from messaging transports. */
 interface SchemaRenderer {
-    SchemaFormat format();
+    Set<SchemaFormat> supportedFormats();
     List<GeneratedSource> render(Map<String, JsonNode> schemas, GenerationOptions options);
 }
