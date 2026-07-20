@@ -11,6 +11,7 @@ final class KafkaTransportRenderer implements TransportRenderer {
 
     @Override public List<GeneratedSource> render(AsyncApiDocument document, GenerationOptions options) {
         List<GeneratedSource> sources = new ArrayList<>();
+        sources.addAll(new ContractRenderer().render(document, options));
         for (AsyncApiDocument.Operation op : document.operations()) {
             if (!op.transports().contains(transport().bindingName())) continue;
             String payload = ContractRenderer.payloadType(op.payload());
@@ -27,10 +28,7 @@ final class KafkaTransportRenderer implements TransportRenderer {
     private GeneratedSource renderProducer(AsyncApiDocument.Operation operation, GenerationOptions options, String payload, String headers) {
         String name = operation.messageName() + "KafkaProducer";
         String content = "package " + options.kafkaPackage() + ";\n\n"
-            + "import " + options.contractPackage() + "." + operation.messageName() + "Publisher;\n"
-            + "import " + options.contractPackage() + "." + headers + ";\n"
-            + "import " + options.contractPackage() + ".Channels;\n"
-            + (ContractRenderer.requiresModelImport(operation.payload()) ? "import " + options.modelPackage() + "." + payload + ";\n" : "")
+            + (ContractRenderer.requiresModelImport(operation.payload()) ? "import " + options.dtoPackage() + "." + payload + ";\n" : "")
             + "import org.springframework.kafka.core.KafkaTemplate;\n"
             + "import org.springframework.stereotype.Component;\n\n"
             + "@Component\npublic class " + name + " implements " + operation.messageName() + "Publisher {\n"
@@ -45,11 +43,7 @@ final class KafkaTransportRenderer implements TransportRenderer {
         String name = operation.messageName() + "KafkaListenerAdapter";
         String channel = ContractRenderer.channelConstant(operation.topic());
         String content = "package " + options.kafkaPackage() + ";\n\n"
-            + "import " + options.contractPackage() + "." + operation.messageName() + "Handler;\n"
-            + "import " + options.contractPackage() + "." + headers + ";\n"
-            + "import " + options.contractPackage() + ".MessageMetadata;\n"
-            + "import " + options.contractPackage() + ".Channels;\n"
-            + (ContractRenderer.requiresModelImport(operation.payload()) ? "import " + options.modelPackage() + "." + payload + ";\n" : "")
+            + (ContractRenderer.requiresModelImport(operation.payload()) ? "import " + options.dtoPackage() + "." + payload + ";\n" : "")
             + "import org.springframework.kafka.annotation.KafkaListener;\n"
             + "import org.springframework.stereotype.Component;\n\n"
             + "@Component\npublic class " + name + " {\n    private final " + operation.messageName() + "Handler handler;\n"

@@ -21,11 +21,11 @@ final class AvroModelRenderer implements SchemaRenderer {
             if ("record".equals(schema.path("type").asText())) {
                 List<String> fields = new ArrayList<>();
                 schema.path("fields").forEach(field -> fields.add(type(field.path("type")) + " " + field.path("name").asText()));
-                result.add(source(options.modelPackage(), name, "package " + options.modelPackage() + ";\n\npublic record " + name + "(" + String.join(", ", fields) + ") { }\n"));
+                result.add(source(options.dtoPackage(), name, "package " + options.dtoPackage() + ";\n\npublic record " + name + "(" + String.join(", ", fields) + ") { }\n"));
             } else if ("enum".equals(schema.path("type").asText())) {
                 List<String> symbols = new ArrayList<>();
                 schema.path("symbols").forEach(symbol -> symbols.add(symbol.asText()));
-                result.add(source(options.modelPackage(), name, "package " + options.modelPackage() + ";\n\npublic enum " + name + " { " + String.join(", ", symbols) + " }\n"));
+                result.add(source(options.dtoPackage(), name, "package " + options.dtoPackage() + ";\n\npublic enum " + name + " { " + String.join(", ", symbols) + " }\n"));
             } else throw new IllegalArgumentException("Unsupported Avro component type for " + entry.getKey() + ": " + schema.path("type").asText());
         }
         return result;

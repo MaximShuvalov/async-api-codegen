@@ -17,7 +17,7 @@ final class JsonSchemaModelRenderer implements SchemaRenderer {
             if (!supportedFormats().contains(SchemaFormat.from(schema.getValue().path("schemaFormat").asText()))) continue;
             String name = AsyncApiCodeGenerator.javaName(schema.getKey());
             JsonNode schemaNode = schema.getValue().has("schemaFormat") ? schema.getValue().path("schema") : schema.getValue();
-            result.add(source(options.modelPackage(), name, renderType(options.modelPackage(), name, schemaNode)));
+            result.add(source(options.dtoPackage(), name, renderType(options.dtoPackage(), name, schemaNode)));
         }
         return result;
     }

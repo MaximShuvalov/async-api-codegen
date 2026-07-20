@@ -51,7 +51,6 @@ public final class AsyncApiCodeGenerator {
                 sources.addAll(renderer.render(document.schemas(), options));
             }
         }
-        if (options.generateContracts()) sources.addAll(new ContractRenderer().render(document, options.contractPackage(), options.modelPackage()));
         for (TransportRenderer renderer : renderers(document)) {
             sources.addAll(renderer.render(document, options));
         }

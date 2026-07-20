@@ -8,22 +8,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class ContractRenderer {
-    List<GeneratedSource> render(AsyncApiDocument document, String contractPackage, String modelPackage) {
+    List<GeneratedSource> render(AsyncApiDocument document, GenerationOptions options) {
+        List<AsyncApiDocument.Operation> operations = document.operations().stream()
+            .filter(operation -> operation.transports().contains("kafka"))
+            .filter(operation -> operation.action() == AsyncApiDocument.Action.SEND ? options.generateProducers() : options.generateConsumers())
+            .toList();
+        if (operations.isEmpty()) return List.of();
+
+        String kafkaPackage = options.kafkaPackage();
+        String dtoPackage = options.dtoPackage();
         List<GeneratedSource> sources = new ArrayList<>();
-        sources.add(new GeneratedSource(path(contractPackage, "MessageMetadata"), "package " + contractPackage + ";\n\npublic record MessageMetadata(String topic, String key) { }\n"));
-        sources.add(new GeneratedSource(path(contractPackage, "Channels"), renderChannels(document, contractPackage)));
-        for (AsyncApiDocument.Operation op : document.operations()) {
+        sources.add(new GeneratedSource(path(kafkaPackage, "MessageMetadata"), "package " + kafkaPackage + ";\n\npublic record MessageMetadata(String topic, String key) { }\n"));
+        sources.add(new GeneratedSource(path(kafkaPackage, "Channels"), renderChannels(operations, kafkaPackage)));
+        for (AsyncApiDocument.Operation op : operations) {
             String payload = payloadType(op.payload());
             String headers = op.messageName() + "Headers";
             String name = op.messageName() + (op.action() == AsyncApiDocument.Action.SEND ? "Publisher" : "Handler");
             String method = op.action() == AsyncApiDocument.Action.SEND
                 ? "void send(" + payload + " payload, " + headers + " headers);"
                 : "void handle(" + payload + " payload, " + headers + " headers, MessageMetadata metadata);";
-            String modelImport = requiresModelImport(op.payload()) ? "import " + modelPackage + "." + payload + ";\n" : "";
-            String content = "package " + contractPackage + ";\n\n" + modelImport + "\npublic interface " + name + " {\n    " + method + "\n}\n";
-            sources.add(new GeneratedSource(path(contractPackage, name), content));
-            String headerContent = "package " + contractPackage + ";\n\npublic record " + headers + "(" + headerFields(op.headers()) + ") { }\n";
-            sources.add(new GeneratedSource(path(contractPackage, headers), headerContent));
+            String modelImport = requiresModelImport(op.payload()) ? "import " + dtoPackage + "." + payload + ";\n" : "";
+            String content = "package " + kafkaPackage + ";\n\n" + modelImport + "\npublic interface " + name + " {\n    " + method + "\n}\n";
+            sources.add(new GeneratedSource(path(kafkaPackage, name), content));
+            String headerContent = "package " + kafkaPackage + ";\n\npublic record " + headers + "(" + headerFields(op.headers()) + ") { }\n";
+            sources.add(new GeneratedSource(path(kafkaPackage, headers), headerContent));
         }
         return sources;
     }
@@ -53,10 +61,10 @@ final class ContractRenderer {
         if (constant.isEmpty() || Character.isDigit(constant.charAt(0))) constant = "CHANNEL_" + constant;
         return constant;
     }
-    private String renderChannels(AsyncApiDocument document, String contractPackage) {
+    private String renderChannels(List<AsyncApiDocument.Operation> operations, String kafkaPackage) {
         java.util.Map<String, String> names = new java.util.LinkedHashMap<>();
         java.util.Set<String> used = new java.util.HashSet<>();
-        for (AsyncApiDocument.Operation operation : document.operations()) {
+        for (AsyncApiDocument.Operation operation : operations) {
             if (names.containsKey(operation.topic())) continue;
             String base = channelConstant(operation.topic());
             if (!used.add(base)) throw new IllegalArgumentException("Channel constant name collision for topic: " + operation.topic());
@@ -65,7 +73,7 @@ final class ContractRenderer {
         StringBuilder constants = new StringBuilder();
         names.forEach((topic, name) -> constants.append("    public static final String ").append(name).append(" = \"")
             .append(topic.replace("\\", "\\\\").replace("\"", "\\\"")).append("\";\n"));
-        return "package " + contractPackage + ";\n\npublic final class Channels {\n    private Channels() { }\n\n" + constants + "}\n";
+        return "package " + kafkaPackage + ";\n\npublic final class Channels {\n    private Channels() { }\n\n" + constants + "}\n";
     }
     private static String headerType(JsonNode schema) {
         return switch (schema.path("type").asText("object")) {

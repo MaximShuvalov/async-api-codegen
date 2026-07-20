@@ -19,15 +19,13 @@ asyncApiSpring {
   generateModel(true)
   generateProducer(true)
   generateConsumer(false)
-  modelPackage('com.example.contract.model')
-  contractPackage('com.example.contract.api')
   kafkaPackage('com.example.infrastructure.kafka')
 }
 ```
 
-Задача записывает файлы только в `build/generated/sources/asyncapi/java/main`; этот каталог автоматически добавляется к исходникам `main`. Транспорт определяется для каждой операции исключительно по стандартным AsyncAPI `bindings` её канала, операции или сообщения. В MVP поддерживается `kafka`; операция с неподдерживаемым binding завершается ошибкой с именем операции и значением binding. Операции `send` создают контракты издателя и Kafka-продюсеры, а `receive` — контракты обработчика и адаптеры listener.
+Задача записывает файлы только в `build/generated/sources/asyncapi/java/main`; этот каталог автоматически добавляется к исходникам `main`. Транспорт определяется для каждой операции исключительно по стандартным AsyncAPI `bindings` её канала, операции или сообщения. В MVP поддерживается `kafka`; операция с неподдерживаемым binding завершается ошибкой с именем операции и значением binding. Операции `send` создают Kafka publisher и продюсеры, а `receive` — Kafka handler и адаптеры listener.
 
-Параметры `generateModel`, `generateContract`, `generateProducer` и `generateConsumer` определяют, какие категории артефактов создавать. При генерации продюсера или consumer контракты должны оставаться включёнными. По умолчанию используются пакеты `<basePackage>.model`, `.contract` и `.kafka`.
+Параметры `generateModel`, `generateProducer` и `generateConsumer` определяют, какие категории артефактов создавать. Все Kafka-артефакты находятся под `<basePackage>.kafka`: payload-схемы — в `.kafka.dto`, а `Channels`, metadata, headers, publisher/handler, producer и listener — непосредственно в `.kafka`. При отключённом producer или consumer не создаются соответствующие `send`- или `receive`-артефакты. Отдельные общие пакеты моделей или контрактов не создаются.
 
 Плагин также поддерживает Spring-проекты на Kotlin/JVM: он генерирует Java-типы в обычный набор исходников Java `main` и делает `compileKotlin` зависимой от `generateAsyncApi`.
 

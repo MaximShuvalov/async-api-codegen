@@ -20,11 +20,8 @@ import org.gradle.api.tasks.TaskAction;
 public abstract class GenerateAsyncApiTask extends DefaultTask {
     @InputFile @PathSensitive(PathSensitivity.RELATIVE) public abstract RegularFileProperty getSpecification();
     @Input public abstract Property<String> getBasePackage();
-    @Input public abstract Property<String> getModelPackage();
-    @Input public abstract Property<String> getContractPackage();
     @Input public abstract Property<String> getKafkaPackage();
     @Input public abstract Property<Boolean> getGenerateModels();
-    @Input public abstract Property<Boolean> getGenerateContracts();
     @Input public abstract Property<Boolean> getGenerateProducers();
     @Input public abstract Property<Boolean> getGenerateConsumers();
     @OutputDirectory public abstract DirectoryProperty getOutputDirectory();
@@ -34,7 +31,7 @@ public abstract class GenerateAsyncApiTask extends DefaultTask {
         new AsyncApiCodeGenerator().generate(new GenerationRequest(
             getSpecification().get().getAsFile().toPath(),
             getOutputDirectory().get().getAsFile().toPath(),
-            new GenerationOptions(getModelPackage().get(), getContractPackage().get(), getKafkaPackage().get(),
-                getGenerateModels().get(), getGenerateContracts().get(), getGenerateProducers().get(), getGenerateConsumers().get())));
+            new GenerationOptions(getKafkaPackage().get(), getGenerateModels().get(),
+                getGenerateProducers().get(), getGenerateConsumers().get())));
     }
 }

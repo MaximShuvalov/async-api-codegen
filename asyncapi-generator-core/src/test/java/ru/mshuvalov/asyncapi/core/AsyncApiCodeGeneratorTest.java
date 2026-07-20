@@ -20,10 +20,11 @@ class AsyncApiCodeGeneratorTest {
             """);
         Path output = Files.createTempDirectory("generated");
         new AsyncApiCodeGenerator().generate(new GenerationRequest(spec, output, GenerationOptions.defaults("example.generated")));
-        assertTrue(Files.exists(output.resolve("example/generated/model/Order.java")));
+        assertTrue(Files.exists(output.resolve("example/generated/kafka/dto/Order.java")));
         assertTrue(Files.exists(output.resolve("example/generated/kafka/SendOrderKafkaProducer.java")));
-        assertTrue(Files.readString(output.resolve("example/generated/contract/Channels.java")).contains("ORDERS"));
-        String model = Files.readString(output.resolve("example/generated/model/Order.java"));
+        assertTrue(Files.readString(output.resolve("example/generated/kafka/Channels.java")).contains("ORDERS"));
+        assertFalse(Files.exists(output.resolve("example/generated/contract")));
+        String model = Files.readString(output.resolve("example/generated/kafka/dto/Order.java"));
         assertTrue(model.contains("byte[] raw"));
         assertTrue(model.contains("byte[] encoded"));
     }
@@ -68,7 +69,7 @@ class AsyncApiCodeGeneratorTest {
         new AsyncApiCodeGenerator().generate(new GenerationRequest(spec, output, GenerationOptions.defaults("example.generated")));
 
         assertTrue(Files.exists(output.resolve("example/generated/kafka/SendOrderKafkaProducer.java")));
-        assertTrue(Files.exists(output.resolve("example/generated/contract/SendOrderPublisher.java")));
+        assertTrue(Files.exists(output.resolve("example/generated/kafka/SendOrderPublisher.java")));
     }
 
     @Test void generatesBinaryInlinePayloadWithoutAModelImport() throws Exception {
@@ -97,14 +98,45 @@ class AsyncApiCodeGeneratorTest {
 
         new AsyncApiCodeGenerator().generate(new GenerationRequest(spec, output, GenerationOptions.defaults("example.generated")));
 
-        String contract = Files.readString(output.resolve("example/generated/contract/SendFilePublisher.java"));
+        String contract = Files.readString(output.resolve("example/generated/kafka/SendFilePublisher.java"));
         String producer = Files.readString(output.resolve("example/generated/kafka/SendFileKafkaProducer.java"));
         String listener = Files.readString(output.resolve("example/generated/kafka/ReceiveFileKafkaListenerAdapter.java"));
         assertTrue(contract.contains("void send(byte[] payload"));
-        assertFalse(contract.contains("example.generated.model"));
+        assertFalse(contract.contains("example.generated.kafka.dto"));
         assertTrue(producer.contains("KafkaTemplate<String, byte[]>"));
-        assertFalse(producer.contains("example.generated.model"));
+        assertFalse(producer.contains("example.generated.kafka.dto"));
         assertTrue(listener.contains("void onMessage(byte[] payload)"));
-        assertFalse(listener.contains("example.generated.model"));
+        assertFalse(listener.contains("example.generated.kafka.dto"));
+    }
+
+    @Test void generatesOnlyEnabledKafkaDirections() throws Exception {
+        Path spec = Files.createTempFile("asyncapi", ".yaml");
+        Files.writeString(spec, """
+            asyncapi: 3.0.0
+            channels: { events: { address: events, bindings: { kafka: {} } } }
+            operations:
+              sendEvent: { action: send, channel: { $ref: '#/channels/events' }, messages: [{ payload: {} }] }
+              receiveEvent: { action: receive, channel: { $ref: '#/channels/events' }, messages: [{ payload: {} }] }
+            """);
+        Path producerOutput = Files.createTempDirectory("generated-producer");
+        Path consumerOutput = Files.createTempDirectory("generated-consumer");
+
+        new AsyncApiCodeGenerator().generate(new GenerationRequest(spec, producerOutput,
+            new GenerationOptions("example.kafka", true, true, false)));
+        new AsyncApiCodeGenerator().generate(new GenerationRequest(spec, consumerOutput,
+            new GenerationOptions("example.kafka", true, false, true)));
+
+        assertTrue(Files.exists(producerOutput.resolve("example/kafka/SendEventPublisher.java")));
+        assertTrue(Files.exists(producerOutput.resolve("example/kafka/SendEventHeaders.java")));
+        assertTrue(Files.exists(producerOutput.resolve("example/kafka/SendEventKafkaProducer.java")));
+        assertFalse(Files.exists(producerOutput.resolve("example/kafka/ReceiveEventHandler.java")));
+        assertFalse(Files.exists(producerOutput.resolve("example/kafka/ReceiveEventHeaders.java")));
+        assertFalse(Files.exists(producerOutput.resolve("example/kafka/ReceiveEventKafkaListenerAdapter.java")));
+        assertTrue(Files.exists(consumerOutput.resolve("example/kafka/ReceiveEventHandler.java")));
+        assertTrue(Files.exists(consumerOutput.resolve("example/kafka/ReceiveEventHeaders.java")));
+        assertTrue(Files.exists(consumerOutput.resolve("example/kafka/ReceiveEventKafkaListenerAdapter.java")));
+        assertFalse(Files.exists(consumerOutput.resolve("example/kafka/SendEventPublisher.java")));
+        assertFalse(Files.exists(consumerOutput.resolve("example/kafka/SendEventHeaders.java")));
+        assertFalse(Files.exists(consumerOutput.resolve("example/kafka/SendEventKafkaProducer.java")));
     }
 }

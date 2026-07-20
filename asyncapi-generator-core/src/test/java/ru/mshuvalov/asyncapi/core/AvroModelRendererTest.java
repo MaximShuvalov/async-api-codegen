@@ -26,7 +26,7 @@ class AvroModelRendererTest {
             """);
         Path output = Files.createTempDirectory("generated");
         new AsyncApiCodeGenerator().generate(new GenerationRequest(spec, output, GenerationOptions.defaults("example")));
-        String model = Files.readString(output.resolve("example/model/User.java"));
+        String model = Files.readString(output.resolve("example/kafka/dto/User.java"));
         assertTrue(model.contains("String id"));
         assertTrue(model.contains("byte[] content"));
     }
