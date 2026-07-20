@@ -37,8 +37,6 @@ public final class AsyncApiSpringPlugin implements Plugin<Project> {
             sets.named("main", main -> main.getJava().srcDir(task));
             project.getTasks().named("compileJava").configure(t -> t.dependsOn(task));
         });
-        // Kotlin/JVM applies the Java plugin, but its compiler runs before javac.
-        // Make generated Java types available when Kotlin sources reference them.
         project.getPluginManager().withPlugin("org.jetbrains.kotlin.jvm", ignored ->
             project.getTasks().matching(t -> t.getName().equals("compileKotlin")).configureEach(t -> t.dependsOn(task)));
     }
