@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,6 +20,21 @@ import java.util.Set;
 /** Parses AsyncAPI 3.0 into a renderer-facing model and writes Java sources. */
 public final class AsyncApiCodeGenerator {
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    private final Map<TransportType, TransportRenderer> transportRenderers;
+
+    public AsyncApiCodeGenerator() {
+        this(List.of(new KafkaTransportRenderer()));
+    }
+
+    /** Enables CLI/Maven/IDE integrations to provide additional transport renderers. */
+    public AsyncApiCodeGenerator(Collection<? extends TransportRenderer> renderers) {
+        Map<TransportType, TransportRenderer> registered = new LinkedHashMap<>();
+        for (TransportRenderer renderer : renderers) {
+            TransportRenderer previous = registered.putIfAbsent(renderer.transport(), renderer);
+            if (previous != null) throw new IllegalArgumentException("Duplicate transport renderer: " + renderer.transport().bindingName());
+        }
+        this.transportRenderers = Map.copyOf(registered);
+    }
 
     public List<GeneratedSource> generate(GenerationRequest request) throws IOException {
         JsonNode root = mapper.readTree(Files.newBufferedReader(request.specification()));
@@ -43,16 +59,16 @@ public final class AsyncApiCodeGenerator {
     }
 
     private List<TransportRenderer> renderers(AsyncApiDocument document) {
-        Map<String, TransportRenderer> registered = Map.of("kafka", new KafkaTransportRenderer());
         Map<String, TransportRenderer> selected = new LinkedHashMap<>();
         for (AsyncApiDocument.Operation operation : document.operations()) {
-            for (String transport : operation.transports()) {
-                TransportRenderer renderer = registered.get(transport);
+            for (String binding : operation.transports()) {
+                TransportType transport = TransportType.fromBinding(binding).orElse(null);
+                TransportRenderer renderer = transport == null ? null : transportRenderers.get(transport);
                 if (renderer == null) {
                     throw new IllegalArgumentException("Operation " + operation.name()
-                        + " uses unsupported transport binding: " + transport);
+                        + " uses unsupported transport binding: " + binding);
                 }
-                selected.putIfAbsent(transport, renderer);
+                selected.putIfAbsent(binding, renderer);
             }
         }
         return List.copyOf(selected.values());

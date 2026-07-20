@@ -5,12 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class KafkaTransportRenderer implements TransportRenderer {
-    @Override public String transport() { return "kafka"; }
+    @Override public TransportType transport() { return TransportType.KAFKA; }
 
     @Override public List<GeneratedSource> render(AsyncApiDocument document, GenerationOptions options) {
         List<GeneratedSource> sources = new ArrayList<>();
         for (AsyncApiDocument.Operation op : document.operations()) {
-            if (!op.transports().contains(transport())) continue;
+            if (!op.transports().contains(transport().bindingName())) continue;
             String payload = ContractRenderer.payloadType(op.payload());
             String headers = op.messageName() + "Headers";
             if (op.action() == AsyncApiDocument.Action.SEND && options.generateProducers()) {
