@@ -1,0 +1,35 @@
+image: gradle:9.3.0-jdk21
+
+stages:
+  - verify
+  - publish
+
+variables:
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+  PUBLISH_VERSION: "0.1.0-SNAPSHOT"
+
+cache:
+  key: "gradle-$CI_COMMIT_REF_SLUG"
+  paths:
+    - .gradle/caches
+    - .gradle/notifications
+    - .gradle/wrapper
+
+verify:
+  stage: verify
+  script:
+    - ./gradlew --no-daemon check
+
+publish:
+  stage: publish
+  needs:
+    - verify
+  script:
+    - if [ -n "$CI_COMMIT_TAG" ]; then export PUBLISH_VERSION="${CI_COMMIT_TAG#v}"; fi
+    - ./gradlew --no-daemon publish
+        -Pversion="$PUBLISH_VERSION"
+        -PgitlabMavenRepositoryUrl="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/maven"
+        -PgitlabMavenUsername=gitlab-ci-token
+        -PgitlabMavenToken="$CI_JOB_TOKEN"
+  rules:
+    - when: manual
