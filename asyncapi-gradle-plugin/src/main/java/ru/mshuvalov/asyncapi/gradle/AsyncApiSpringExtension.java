@@ -7,5 +7,4 @@ import org.gradle.api.provider.Property;
 public abstract class AsyncApiSpringExtension {
     public abstract RegularFileProperty getSpecification();
     public abstract Property<String> getBasePackage();
-    public abstract Property<String> getTransport();
 }

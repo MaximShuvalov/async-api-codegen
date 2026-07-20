@@ -5,6 +5,8 @@ info:
 channels:
   ordersCreated:
     address: orders.created
+    bindings:
+      kafka: {}
     messages:
       orderCreated:
         $ref: '#/components/messages/OrderCreated'

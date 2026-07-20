@@ -16,11 +16,10 @@ plugins { id 'ru.mshuvalov.asyncapi' version '0.1.0' }
 asyncApiSpring {
   specification = layout.projectDirectory.file('src/main/asyncapi/api.yaml')
   basePackage = 'com.example.generated'
-  transport = 'kafka'
 }
 ```
 
-The task writes only to `build/generated/sources/asyncapi/java/main`; this directory is added to `main` sources automatically. `send` operations yield publisher contracts and Kafka producers; `receive` operations yield handler contracts and listener adapters.
+The task writes only to `build/generated/sources/asyncapi/java/main`; this directory is added to `main` sources automatically. The transport is inferred only from standard AsyncAPI `bindings` on a channel, operation, or message (the MVP recognizes `kafka`). `send` operations yield publisher contracts and Kafka producers; `receive` operations yield handler contracts and listener adapters.
 
 ## MVP support and limits
 

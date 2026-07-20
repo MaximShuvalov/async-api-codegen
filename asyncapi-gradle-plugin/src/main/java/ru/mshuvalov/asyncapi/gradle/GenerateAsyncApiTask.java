@@ -19,7 +19,6 @@ import org.gradle.api.tasks.TaskAction;
 public abstract class GenerateAsyncApiTask extends DefaultTask {
     @InputFile @PathSensitive(PathSensitivity.RELATIVE) public abstract RegularFileProperty getSpecification();
     @Input public abstract Property<String> getBasePackage();
-    @Input public abstract Property<String> getTransport();
     @OutputDirectory public abstract DirectoryProperty getOutputDirectory();
 
     @TaskAction
@@ -27,6 +26,6 @@ public abstract class GenerateAsyncApiTask extends DefaultTask {
         new AsyncApiCodeGenerator().generate(new GenerationRequest(
             getSpecification().get().getAsFile().toPath(),
             getOutputDirectory().get().getAsFile().toPath(),
-            getBasePackage().get(), getTransport().get()));
+            getBasePackage().get()));
     }
 }

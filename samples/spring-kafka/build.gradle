@@ -17,5 +17,4 @@ dependencies {
 asyncApiSpring {
     specification = layout.projectDirectory.file('src/main/asyncapi/orders.yaml')
     basePackage = 'com.example.orders.generated'
-    transport = 'kafka'
 }

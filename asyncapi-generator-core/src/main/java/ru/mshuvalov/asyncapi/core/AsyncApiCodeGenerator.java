@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Parses AsyncAPI 3.0 into a renderer-facing model and writes Java sources. */
 public final class AsyncApiCodeGenerator {
@@ -28,22 +29,31 @@ public final class AsyncApiCodeGenerator {
         List<GeneratedSource> sources = new ArrayList<>();
         sources.addAll(new JavaModelRenderer(root).render(document, request.basePackage()));
         sources.addAll(new ContractRenderer().render(document, request.basePackage()));
-        sources.addAll(renderer(request.transport()).render(document, request.basePackage()));
+        sources.addAll(renderer(document).render(document, request.basePackage()));
         write(sources, request.outputDirectory());
         return List.copyOf(sources);
     }
 
-    private TransportRenderer renderer(String transport) {
-        if ("kafka".equalsIgnoreCase(transport)) return new KafkaTransportRenderer();
-        throw new IllegalArgumentException("No renderer registered for transport: " + transport);
+    private TransportRenderer renderer(AsyncApiDocument document) {
+        if (document.transports().contains("kafka")) return new KafkaTransportRenderer();
+        throw new IllegalArgumentException("No supported transport binding found. Add a Kafka binding to the channel, operation, or message.");
     }
 
     private AsyncApiDocument parse(JsonNode root) {
         Map<String, JsonNode> schemas = new LinkedHashMap<>();
         root.path("components").path("schemas").fields().forEachRemaining(e -> schemas.put(e.getKey(), e.getValue()));
         List<AsyncApiDocument.Operation> operations = new ArrayList<>();
-        root.path("operations").fields().forEachRemaining(e -> operations.add(parseOperation(root, e.getKey(), e.getValue())));
-        return new AsyncApiDocument(Map.copyOf(schemas), List.copyOf(operations));
+        Set<String> transports = new java.util.LinkedHashSet<>();
+        root.path("operations").fields().forEachRemaining(e -> {
+            JsonNode operation = resolve(root, e.getValue());
+            JsonNode channel = resolve(root, operation.path("channel"));
+            bindingNames(channel, transports);
+            bindingNames(operation, transports);
+            JsonNode messages = operation.path("messages");
+            if (messages.isArray()) messages.forEach(message -> bindingNames(resolve(root, message), transports));
+            operations.add(parseOperation(root, e.getKey(), operation));
+        });
+        return new AsyncApiDocument(Map.copyOf(schemas), List.copyOf(operations), Set.copyOf(transports));
     }
 
     private AsyncApiDocument.Operation parseOperation(JsonNode root, String name, JsonNode raw) {
@@ -64,6 +74,10 @@ public final class AsyncApiCodeGenerator {
     private JsonNode first(JsonNode node) {
         if (node.isObject()) { Iterator<JsonNode> values = node.elements(); return values.hasNext() ? values.next() : node; }
         return node;
+    }
+
+    private void bindingNames(JsonNode source, Set<String> transports) {
+        source.path("bindings").fieldNames().forEachRemaining(transports::add);
     }
 
     static JsonNode resolve(JsonNode root, JsonNode node) {

@@ -10,7 +10,6 @@ public final class AsyncApiSpringPlugin implements Plugin<Project> {
     public void apply(Project project) {
         AsyncApiSpringExtension extension = project.getExtensions().create("asyncApiSpring", AsyncApiSpringExtension.class);
         extension.getBasePackage().convention("generated.asyncapi");
-        extension.getTransport().convention("kafka");
         extension.getSpecification().convention(project.getLayout().getProjectDirectory().file("src/main/asyncapi/asyncapi.yaml"));
 
         var task = project.getTasks().register("generateAsyncApi", GenerateAsyncApiTask.class, t -> {
@@ -18,7 +17,6 @@ public final class AsyncApiSpringPlugin implements Plugin<Project> {
             t.setDescription("Generates Java Spring messaging sources from AsyncAPI.");
             t.getSpecification().set(extension.getSpecification());
             t.getBasePackage().set(extension.getBasePackage());
-            t.getTransport().set(extension.getTransport());
             t.getOutputDirectory().convention(project.getLayout().getBuildDirectory().dir("generated/sources/asyncapi/java/main"));
         });
         project.getPluginManager().withPlugin("java", ignored -> {
