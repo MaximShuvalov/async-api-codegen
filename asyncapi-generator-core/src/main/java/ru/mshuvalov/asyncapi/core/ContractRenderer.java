@@ -2,6 +2,8 @@ package ru.mshuvalov.asyncapi.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import ru.mshuvalov.asyncapi.core.model.AsyncApiDocument;
+import ru.mshuvalov.asyncapi.core.model.SchemaFormat;
+
 import java.util.ArrayList;
 import java.util.List;
 

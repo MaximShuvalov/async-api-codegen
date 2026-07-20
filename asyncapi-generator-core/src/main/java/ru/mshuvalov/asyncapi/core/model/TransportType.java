@@ -1,4 +1,4 @@
-package ru.mshuvalov.asyncapi.core;
+package ru.mshuvalov.asyncapi.core.model;
 
 import java.util.Arrays;
 import java.util.Optional;

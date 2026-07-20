@@ -1,6 +1,8 @@
 package ru.mshuvalov.asyncapi.core;
 
 import ru.mshuvalov.asyncapi.core.model.AsyncApiDocument;
+import ru.mshuvalov.asyncapi.core.model.TransportType;
+
 import java.util.ArrayList;
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package ru.mshuvalov.asyncapi.core;
+package ru.mshuvalov.asyncapi.core.model;
 
 /** Schema language declared by AsyncAPI's Multi Format Schema Object. */
 public enum SchemaFormat {

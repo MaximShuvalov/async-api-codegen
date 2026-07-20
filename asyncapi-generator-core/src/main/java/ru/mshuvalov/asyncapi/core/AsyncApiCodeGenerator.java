@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.node.MissingNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import ru.mshuvalov.asyncapi.core.model.AsyncApiDocument;
 import ru.mshuvalov.asyncapi.core.model.AsyncApiDocument.Action;
+import ru.mshuvalov.asyncapi.core.model.SchemaFormat;
+import ru.mshuvalov.asyncapi.core.model.TransportType;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
