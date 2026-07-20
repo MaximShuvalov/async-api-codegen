@@ -29,7 +29,7 @@ final class ContractRenderer {
     static String payloadType(JsonNode payload) {
         if (payload.has("$ref")) {
             String ref = payload.path("$ref").asText();
-            return "" + AsyncApiCodeGenerator.javaName(ref.substring(ref.lastIndexOf('/') + 1));
+            return AsyncApiCodeGenerator.javaName(ref.substring(ref.lastIndexOf('/') + 1));
         }
         if (payload.has("schemaFormat")) {
             JsonNode schema = payload.path("schema");

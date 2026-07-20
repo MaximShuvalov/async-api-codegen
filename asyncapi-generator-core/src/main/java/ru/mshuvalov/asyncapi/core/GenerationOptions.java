@@ -1,7 +1,5 @@
 package ru.mshuvalov.asyncapi.core;
 
-import java.util.Objects;
-
 /** Controls generated artifacts and their Java packages. */
 public record GenerationOptions(
     String modelPackage,

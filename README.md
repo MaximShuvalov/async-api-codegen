@@ -29,6 +29,8 @@ The task writes only to `build/generated/sources/asyncapi/java/main`; this direc
 
 `generateModel`, `generateContract`, `generateProducer`, and `generateConsumer` control artifact categories. Contracts must remain enabled when a producer or consumer is generated. By default packages are `<basePackage>.model`, `.contract`, and `.kafka`.
 
+The plugin also supports Kotlin/JVM Spring projects: it generates Java types into the regular `main` Java source set and makes `compileKotlin` depend on `generateAsyncApi`.
+
 ## MVP support and limits
 
 Supports AsyncAPI 3.0 operations, channels, inline/component messages, `$ref`, object/array/map/primitive JSON Schema, enums, nullable fields, typed headers and Kafka topic bindings. JSON Schema strings with `format: byte` or `binary`, or `contentEncoding: base64`, are generated as `byte[]`. It deliberately does not generate validation annotations, polymorphic schemas (`oneOf`/`allOf`) or user business handlers. AsyncAPI 2 support is reserved for a future adapter to the same internal model.
