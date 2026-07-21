@@ -1,3 +1,6 @@
+import org.gradle.api.credentials.HttpHeaderCredentials
+import org.gradle.authentication.http.HttpHeaderAuthentication
+
 plugins {
     id 'base'
 }
@@ -14,17 +17,26 @@ allprojects {
 
 subprojects {
     plugins.withId('maven-publish') {
-        def gitlabMavenRepositoryUrl = providers.gradleProperty('gitlabMavenRepositoryUrl')
+        def gitlabMavenRepositoryUrl = providers.gradleProperty('gitlabMavenRepositoryUrl').orNull
+        def ciJobToken = providers.environmentVariable('CI_JOB_TOKEN').orNull
+        def token = providers.gradleProperty('gitlabMavenToken').orNull
+            ?: ciJobToken
+            ?: providers.environmentVariable('GITLAB_TOKEN').orNull
+        def headerName = providers.gradleProperty('gitlabMavenHeaderName').orNull
+            ?: (ciJobToken ? 'Job-Token' : 'Private-Token')
 
-        if (gitlabMavenRepositoryUrl.isPresent()) {
+        if (gitlabMavenRepositoryUrl && token) {
             publishing {
                 repositories {
                     maven {
                         name = 'GitLab'
-                        url = uri(gitlabMavenRepositoryUrl.get())
-                        credentials {
-                            username = providers.gradleProperty('gitlabMavenUsername').getOrElse('gitlab-ci-token')
-                            password = providers.gradleProperty('gitlabMavenToken').getOrElse('')
+                        url = uri(gitlabMavenRepositoryUrl)
+                        credentials(HttpHeaderCredentials) {
+                            name = headerName
+                            value = token
+                        }
+                        authentication {
+                            header(HttpHeaderAuthentication)
                         }
                     }
                 }
