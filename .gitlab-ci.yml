@@ -6,7 +6,6 @@ stages:
 
 variables:
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
-  PUBLISH_VERSION: "0.3.0-SNAPSHOT"
 
 cache:
   key: "gradle-$CI_COMMIT_REF_SLUG"
@@ -27,11 +26,14 @@ publish:
   needs:
     - verify
   script:
-    - if [ -n "$CI_COMMIT_TAG" ]; then export PUBLISH_VERSION="${CI_COMMIT_TAG#v}"; fi
-    - ./gradlew --no-daemon publish
-        -Pversion="$PUBLISH_VERSION"
-        -PgitlabMavenRepositoryUrl="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/maven"
-        -PgitlabMavenUsername=gitlab-ci-token
-        -PgitlabMavenToken="$CI_JOB_TOKEN"
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        ./gradlew --no-daemon publish \
+          -Pversion="${CI_COMMIT_TAG#v}" \
+          -PgitlabMavenRepositoryUrl="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/maven"
+      else
+        ./gradlew --no-daemon publish \
+          -PgitlabMavenRepositoryUrl="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/maven"
+      fi
   rules:
     - when: manual
