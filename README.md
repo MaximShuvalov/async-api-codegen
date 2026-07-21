@@ -1,18 +1,36 @@
 # AsyncAPI Spring Code Generator
 
-Gradle-плагин, который генерирует Java код для Spring Kafka из документа AsyncAPI 3.0. Генерация выполняется задачей `generateAsyncApi` и записывается в `build/generated/sources/asyncapi/java/main`; каталог автоматически подключается к исходникам `main`.
+`asyncapi-spring-codegen` — Gradle-плагин и библиотека для генерации Java/Spring messaging-кода по документам AsyncAPI 3.0. Текущая транспортная реализация — Spring Kafka.
 
-Проект состоит из:
+Генерация выполняется задачей `generateAsyncApi`. Сгенерированные исходники помещаются в `build/generated/sources/asyncapi/java/main` и автоматически добавляются в исходники `main` Java-проекта.
+
+## Возможности
+
+Проект состоит из двух модулей и примера:
 
 * `asyncapi-generator-core` — парсинг AsyncAPI и рендеринг исходников;
 * `asyncapi-gradle-plugin` — Gradle-плагин `ru.mshuvalov.asyncapi.codegen`;
-* `samples/spring-kafka` — пример Spring Boot/Kafka-проекта.
+* `samples/spring-kafka` — минимальный Spring Boot/Kafka-проект с примером AsyncAPI-документа.
 
-## Подключение
+Генератор создаёт:
+
+* payload DTO из схем;
+* типы для Kafka-каналов и metadata;
+* publisher и producer для операций отправки (`send`);
+* handler и listener adapter для операций получения (`receive`).
+
+## Требования
+
+* JDK 21 — оба модуля проекта используют Java toolchain 21;
+* Gradle Wrapper из репозитория (`./gradlew`).
+
+## Подключение к Gradle-проекту
+
+Подключите плагин и настройте расширение `asyncApiSpring`:
 
 ```groovy
 plugins {
-  id 'ru.mshuvalov.asyncapi.codegen' version '0.1.0'
+  id 'ru.mshuvalov.asyncapi.codegen' version '<версия-плагина>'
 }
 
 asyncApiSpring {
@@ -27,13 +45,37 @@ asyncApiSpring {
 }
 ```
 
-По умолчанию `basePackage` равен `generated.asyncapi`, `specification` — `src/main/asyncapi/asyncapi.yaml`, а `kafkaPackage` — `<basePackage>.kafka`.
+Укажите вместо `<версия-плагина>` версию, доступную в репозитории зависимостей проекта. Значения по умолчанию:
 
-Плагин подключает `generateAsyncApi` к `compileJava`. В Kotlin/JVM-проектах `compileKotlin` также зависит от этой задачи.
+* `specification` — `src/main/asyncapi/asyncapi.yaml`;
+* `basePackage` — `generated.asyncapi`;
+* `kafkaPackage` — `<basePackage>.kafka`;
+* `generateModel`, `generateProducer`, `generateConsumer` — `true`.
+
+После применения плагина:
+
+```bash
+./gradlew generateAsyncApi
+```
+
+Плагин связывает `generateAsyncApi` с `compileJava`. Для Kotlin/JVM-проектов `compileKotlin` также зависит от этой задачи.
+
+## Настройки генерации
+
+| Настройка | Назначение |
+| --- | --- |
+| `specification` | AsyncAPI-файл, из которого выполняется генерация. |
+| `basePackage` | Базовый Java-пакет проекта. |
+| `kafkaPackage` | Пакет с транспортными Kafka-типами. |
+| `generateModel(boolean)` | Включает или отключает генерацию payload DTO. |
+| `generateProducer(boolean)` | Включает или отключает publisher, headers и Kafka producer для операций `send`. |
+| `generateConsumer(boolean)` | Включает или отключает handler, headers и Kafka listener adapter для операций `receive`. |
+
+Если оба направления (`producer` и `consumer`) отключены, operation-specific типы не создаются. `Channels` и `MessageMetadata` создаются, если включено хотя бы одно направление.
 
 ## Структура сгенерированного кода
 
-Генератор не создаёт общий слой `contract` или `model`. Все типы, относящиеся к транспорту, находятся под `kafkaPackage`:
+Генератор размещает транспортные типы в `kafkaPackage`, а схемы payload — в его пакете `dto`:
 
 ```text
 com.example.orders.messaging.kafka
@@ -49,24 +91,55 @@ com.example.orders.messaging.kafka
     └── OrderPayload.java
 ```
 
-`dto` содержит схемы payload. В корневом пакете Kafka размещаются константы каналов, headers, publisher/handler и Spring Kafka adapter-ы.
-
-Флаги управления генерацией:
-
-* `generateModel(boolean)` — генерировать payload DTO;
-* `generateProducer(boolean)` — генерировать только артефакты операций `send`: publisher, headers и Kafka producer;
-* `generateConsumer(boolean)` — генерировать только артефакты операций `receive`: handler, headers и Kafka listener adapter.
-
-Если направление отключено, его operation-specific типы не создаются. `Channels` и `MessageMetadata` создаются, когда включено хотя бы одно направление.
+Имена в примере зависят от каналов, сообщений и операций из AsyncAPI-документа.
 
 ## Поддерживаемый AsyncAPI
 
-Поддерживается AsyncAPI 3.0: операции, каналы, встроенные и компонентные сообщения, локальные `$ref`, JSON Schema для объектов, массивов, map и примитивов, enum, nullable-поля, типизированные headers и Kafka bindings на канале, операции или сообщении.
+Поддерживается AsyncAPI 3.0, включая:
 
-Транспорт определяется по стандартному `bindings`. Сейчас поддерживается только `kafka`; операция с другим binding завершается ошибкой.
+* операции и каналы;
+* встроенные и компонентные сообщения;
+* локальные `$ref`;
+* JSON Schema для объектов, массивов, map и примитивов;
+* enum и nullable-поля;
+* типизированные headers;
+* Kafka bindings на канале, операции или сообщении;
+* component Avro record/enum-схемы.
 
-Для строковых схем `format: byte`, `format: binary` и `contentEncoding: base64` генерируется `byte[]`, в том числе для inline payload. Поддерживаются component Avro record/enum-схемы.
+Для строковых схем с `format: byte`, `format: binary` или `contentEncoding: base64` генерируется `byte[]`, в том числе для inline payload.
+
+Транспорт определяется по стандартному `bindings`. Поддерживается только `kafka`; операция с другим binding завершается ошибкой.
 
 ## Ограничения
 
-Не поддерживаются AsyncAPI 2.x, `oneOf`/`allOf`, аннотации валидации, пользовательская бизнес-логика и Protobuf без отдельного `SchemaRenderer`/интеграции с `protoc`.
+Не поддерживаются:
+
+* AsyncAPI 2.x;
+* `oneOf` и `allOf`;
+* аннотации валидации;
+* пользовательская бизнес-логика;
+* Protobuf без отдельного `SchemaRenderer` или интеграции с `protoc`.
+
+## Пример проекта
+
+В `samples/spring-kafka` находится Spring Boot/Kafka-проект с документом `src/main/asyncapi/orders.yaml`. Запустить генерацию для него можно из корня репозитория:
+
+```bash
+./gradlew -p samples/spring-kafka generateAsyncApi
+```
+
+Результат будет находиться в `samples/spring-kafka/build/generated/sources/asyncapi/java/main`.
+
+## Разработка проекта
+
+Проверка всех модулей выполняется командой:
+
+```bash
+./gradlew check
+```
+
+В `asyncapi-generator-core` и `asyncapi-gradle-plugin` тесты запускаются на JUnit Platform. Для сборки артефактов используйте:
+
+```bash
+./gradlew build
+```
