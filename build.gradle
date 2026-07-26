@@ -50,7 +50,6 @@ subprojects {
         checkstyle {
             toolVersion = '10.12.5'
             maxWarnings = 0
-            configFile = null
         }
 
         apply plugin: 'com.github.spotbugs'
