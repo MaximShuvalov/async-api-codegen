@@ -8,7 +8,7 @@ on:
 
 jobs:
   call-template:
-    uses: MaximShuvalov/infrastructure-ci-templates/.github/workflows/libs.yml@main
+    uses: MaximShuvalov/infrastructure-ci-templates/.github/workflows/libs.yml@master
     with:
       java-version: '21'
     secrets:
