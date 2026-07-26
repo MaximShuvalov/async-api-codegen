@@ -1,6 +1,7 @@
 plugins {
     id 'base'
     id 'io.gitlab.arturbosch.detekt' version '1.23.4' apply false
+    id 'checkstyle' apply false
     id 'com.github.spotbugs' version '6.0.9' apply false
 }
 
@@ -27,9 +28,32 @@ subprojects {
         }
     }
 
-    plugins.withId('java') {
-        apply plugin: 'com.github.spotbugs'
+    plugins.withId('org.jetbrains.kotlin.jvm') {
+        apply plugin: 'io.gitlab.arturbosch.detekt'
 
+        detekt {
+            buildUponDefaultConfig = true
+            autoCorrect = false
+            parallel = true
+            reports {
+                html.required = true
+                sarif.required = true
+            }
+            dependencies {
+                detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:1.23.4"
+            }
+        }
+    }
+
+    plugins.withId('java') {
+
+        apply plugin: 'checkstyle'
+        checkstyle {
+            toolVersion = '10.12.5'
+            maxWarnings = 0
+        }
+
+        apply plugin: 'com.github.spotbugs'
         spotbugs {
             ignoreFailures = false
             showProgress = true
@@ -40,7 +64,6 @@ subprojects {
         tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
             reports {
                 html.required = true
-                xml.required = false
                 sarif.required = true
             }
         }
