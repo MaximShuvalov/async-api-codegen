@@ -17,27 +17,17 @@ allprojects {
 
 subprojects {
     plugins.withId('maven-publish') {
-        def gitlabMavenRepositoryUrl = providers.gradleProperty('gitlabMavenRepositoryUrl').orNull
-        def ciJobToken = providers.environmentVariable('CI_JOB_TOKEN').orNull
-        def token = providers.gradleProperty('gitlabMavenToken').orNull
-            ?: ciJobToken
-            ?: providers.environmentVariable('GITLAB_TOKEN').orNull
-        def headerName = providers.gradleProperty('gitlabMavenHeaderName').orNull
-            ?: (ciJobToken ? 'Job-Token' : 'Private-Token')
-
-        if (gitlabMavenRepositoryUrl && token) {
-            publishing {
-                repositories {
-                    maven {
-                        name = 'GitLab'
-                        url = uri(gitlabMavenRepositoryUrl)
-                        credentials(HttpHeaderCredentials) {
-                            name = headerName
-                            value = token
-                        }
-                        authentication {
-                            header(HttpHeaderAuthentication)
-                        }
+        publishing {
+            repositories {
+                maven {
+                    name = "GitHubPackages"
+                    url = uri(
+                            project.findProperty("githubMavenRepositoryUrl") as String?
+                                    ?: "https://maven.pkg.github.com/${System.getenv("GITHUB_REPOSITORY")}"
+                    )
+                    credentials {
+                        username = System.getenv("GITHUB_ACTOR")
+                        password = System.getenv("GITHUB_TOKEN")
                     }
                 }
             }

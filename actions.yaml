@@ -1,0 +1,15 @@
+name: Actions
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  call-template:
+    uses: infrastructure-ci-templates/libs.yaml@main
+    with:
+      java-version: '21'
+    secrets:
+      PUBLISH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
