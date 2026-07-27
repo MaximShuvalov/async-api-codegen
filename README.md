@@ -2,7 +2,7 @@
 
 `asyncapi-spring-codegen` — Gradle-плагин и библиотека для генерации Java/Spring messaging-кода по документам AsyncAPI 3.0. Текущая транспортная реализация — Spring Kafka.
 
-Генерация выполняется задачей `generateAsyncApi`. Сгенерированные исходники помещаются в `build/generated/sources/asyncapi/java/main` и автоматически добавляются в исходники `main` Java-проекта.
+Г енерация выполняется задачей `generateAsyncApi`. Сгенерированные исходники помещаются в `build/generated/sources/asyncapi/java/main` и автоматически добавляются в исходники `main` Java-проекта.
 
 ## Возможности
 
