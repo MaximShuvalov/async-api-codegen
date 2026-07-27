@@ -16,5 +16,7 @@ jobs:
     uses: MaximShuvalov/infrastructure-ci-templates/.github/workflows/libs.yml@master
     with:
       java-version: '21'
+      enable-ai-summary: true
     secrets:
       PUBLISH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      LLM_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
