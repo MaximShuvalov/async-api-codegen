@@ -13,7 +13,9 @@ final class ContractRenderer {
             .filter(operation -> operation.transports().contains("kafka"))
             .filter(operation -> operation.action() == AsyncApiDocument.Action.SEND ? options.generateProducers() : options.generateConsumers())
             .toList();
-        if (operations.isEmpty()) return List.of();
+        if (operations.isEmpty()) {
+            return List.of();
+        }
 
         String kafkaPackage = options.kafkaPackage();
         String dtoPackage = options.dtoPackage();
@@ -47,7 +49,9 @@ final class ContractRenderer {
                 return AsyncApiCodeGenerator.javaName(schema.path("name").asText("Object"));
             }
         }
-        if ("string".equals(schema.path("type").asText()) && isByteArray(schema)) return "byte[]";
+        if ("string".equals(schema.path("type").asText()) && isByteArray(schema)) {
+            return "byte[]";
+        }
         return "Object";
     }
     static boolean requiresModelImport(JsonNode payload) { return payload.has("$ref"); }
@@ -58,16 +62,22 @@ final class ContractRenderer {
     }
     static String channelConstant(String topic) {
         String constant = topic.replaceAll("[^A-Za-z0-9]", "_").replaceAll("_+", "_").toUpperCase(java.util.Locale.ROOT);
-        if (constant.isEmpty() || Character.isDigit(constant.charAt(0))) constant = "CHANNEL_" + constant;
+        if (constant.isEmpty() || Character.isDigit(constant.charAt(0))) {
+            constant = "CHANNEL_" + constant;
+        }
         return constant;
     }
     private String renderChannels(List<AsyncApiDocument.Operation> operations, String kafkaPackage) {
         java.util.Map<String, String> names = new java.util.LinkedHashMap<>();
         java.util.Set<String> used = new java.util.HashSet<>();
         for (AsyncApiDocument.Operation operation : operations) {
-            if (names.containsKey(operation.topic())) continue;
+            if (names.containsKey(operation.topic())) {
+                continue;
+            }
             String base = channelConstant(operation.topic());
-            if (!used.add(base)) throw new IllegalArgumentException("Channel constant name collision for topic: " + operation.topic());
+            if (!used.add(base)) {
+                throw new IllegalArgumentException("Channel constant name collision for topic: " + operation.topic());
+            }
             names.put(operation.topic(), base);
         }
         StringBuilder constants = new StringBuilder();

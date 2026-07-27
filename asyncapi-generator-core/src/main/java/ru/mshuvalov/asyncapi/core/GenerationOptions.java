@@ -19,6 +19,8 @@ public record GenerationOptions(
     public String dtoPackage() { return kafkaPackage + ".dto"; }
 
     private static void requirePackage(String value, String name) {
-        if (value == null || value.isBlank()) throw new IllegalArgumentException(name + " must not be blank");
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(name + " must not be blank");
+        }
     }
 }

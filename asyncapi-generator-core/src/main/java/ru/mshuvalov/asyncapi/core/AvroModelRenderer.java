@@ -15,7 +15,9 @@ final class AvroModelRenderer implements SchemaRenderer {
         List<GeneratedSource> result = new ArrayList<>();
         for (Map.Entry<String, JsonNode> entry : schemas.entrySet()) {
             JsonNode wrapper = entry.getValue();
-            if (!supportedFormats().contains(SchemaFormat.from(wrapper.path("schemaFormat").asText()))) continue;
+            if (!supportedFormats().contains(SchemaFormat.from(wrapper.path("schemaFormat").asText()))) {
+                continue;
+            }
             JsonNode schema = wrapper.path("schema");
             String name = AsyncApiCodeGenerator.javaName(schema.path("name").asText(entry.getKey()));
             if ("record".equals(schema.path("type").asText())) {
@@ -26,14 +28,20 @@ final class AvroModelRenderer implements SchemaRenderer {
                 List<String> symbols = new ArrayList<>();
                 schema.path("symbols").forEach(symbol -> symbols.add(symbol.asText()));
                 result.add(source(options.dtoPackage(), name, "package " + options.dtoPackage() + ";\n\npublic enum " + name + " { " + String.join(", ", symbols) + " }\n"));
-            } else throw new IllegalArgumentException("Unsupported Avro component type for " + entry.getKey() + ": " + schema.path("type").asText());
+            } else {
+                throw new IllegalArgumentException("Unsupported Avro component type for " + entry.getKey() + ": " + schema.path("type").asText());
+            }
         }
         return result;
     }
 
     private String type(JsonNode node) {
         if (node.isArray()) { // nullable Avro unions and simple unions
-            for (JsonNode alternative : node) if (!"null".equals(alternative.asText())) return type(alternative);
+            for (JsonNode alternative : node) {
+                if (!"null".equals(alternative.asText())) {
+                    return type(alternative);
+                }
+            }
             return "Object";
         }
         if (node.isObject()) {

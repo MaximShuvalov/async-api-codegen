@@ -32,7 +32,9 @@ public final class AsyncApiCodeGenerator {
         Map<TransportType, TransportRenderer> registered = new LinkedHashMap<>();
         for (TransportRenderer renderer : renderers) {
             TransportRenderer previous = registered.putIfAbsent(renderer.transport(), renderer);
-            if (previous != null) throw new IllegalArgumentException("Duplicate transport renderer: " + renderer.transport().bindingName());
+            if (previous != null){
+                throw new IllegalArgumentException("Duplicate transport renderer: " + renderer.transport().bindingName());
+            }
         }
         this.transportRenderers = Map.copyOf(registered);
     }
@@ -92,25 +94,35 @@ public final class AsyncApiCodeGenerator {
         List<AsyncApiDocument.Operation> operations = new ArrayList<>();
         root.path("operations").fields().forEachRemaining(e -> {
             JsonNode operation = resolve(root, e.getValue());
-            if (operation.isMissingNode()) return;
+            if (operation.isMissingNode()){
+                return;
+            }
             AsyncApiDocument.Operation parsed = parseOperation(root, e.getKey(), operation);
-            if (parsed != null) operations.add(parsed);
+            if (parsed != null){
+                operations.add(parsed);
+            }
         });
         return new AsyncApiDocument(Map.copyOf(schemas), List.copyOf(operations));
     }
 
     private AsyncApiDocument.Operation parseOperation(JsonNode root, String name, JsonNode raw) {
         JsonNode operation = resolve(root, raw);
-        if (operation.isMissingNode() || externalReferenceOnly(operation.path("channel"))) return null;
+        if (operation.isMissingNode() || externalReferenceOnly(operation.path("channel"))) { return null; }
         Action action = "send".equals(operation.path("action").asText()) ? Action.SEND : Action.RECEIVE;
         JsonNode channel = resolve(root, operation.path("channel"));
         String topic = channel.path("address").asText();
-        if (topic.isBlank()) throw new IllegalArgumentException("Operation " + name + " has no channel address");
+        if (topic.isBlank()) {
+            throw new IllegalArgumentException("Operation " + name + " has no channel address");
+        }
         JsonNode messages = operation.path("messages");
         JsonNode rawMessage = messages.isArray() && !messages.isEmpty() ? messages.get(0) : first(channel.path("messages"));
-        if (externalReferenceOnly(rawMessage)) return null;
+        if (externalReferenceOnly(rawMessage)) {
+            return null;
+        }
         JsonNode message = resolve(root, rawMessage);
-        if (message.isMissingNode() || message.isNull()) throw new IllegalArgumentException("Operation " + name + " has no message");
+        if (message.isMissingNode() || message.isNull()) {
+            throw new IllegalArgumentException("Operation " + name + " has no message");
+        }
         Set<String> transports = new java.util.LinkedHashSet<>();
         bindingNames(channel, transports);
         bindingNames(operation, transports);
@@ -119,7 +131,9 @@ public final class AsyncApiCodeGenerator {
             throw new IllegalArgumentException("Operation " + name + " has no transport binding");
         }
         JsonNode payload = message.path("payload");
-        if (externalReferenceOnly(payload)) return null;
+        if (externalReferenceOnly(payload)) {
+            return null;
+        }
         return new AsyncApiDocument.Operation(name, action, topic, javaName(name), payload,
             resolve(root, message.path("headers")), Set.copyOf(transports),
             SchemaFormat.from(resolve(root, payload).path("schemaFormat").asText()));
@@ -135,10 +149,14 @@ public final class AsyncApiCodeGenerator {
     }
 
     private static boolean externalReferenceOnly(JsonNode node) {
-        if (!node.has("$ref") || node.path("$ref").asText().startsWith("#/")) return false;
+        if (!node.has("$ref") || node.path("$ref").asText().startsWith("#/")) {
+            return false;
+        }
         Iterator<String> fields = node.fieldNames();
         while (fields.hasNext()) {
-            if (!"$ref".equals(fields.next())) return false;
+            if (!"$ref".equals(fields.next())) {
+                return false;
+            }
         }
         return true;
     }
@@ -147,9 +165,13 @@ public final class AsyncApiCodeGenerator {
         JsonNode current = node;
         while (current != null && current.has("$ref")) {
             String ref = current.path("$ref").asText();
-            if (!ref.startsWith("#/")) return externalReferenceOnly(current) ? MissingNode.getInstance() : current;
+            if (!ref.startsWith("#/")) {
+                return externalReferenceOnly(current) ? MissingNode.getInstance() : current;
+            }
             current = root.at(ref.substring(1));
-            if (current.isMissingNode()) throw new IllegalArgumentException("Unresolved reference: " + ref);
+            if (current.isMissingNode()) {
+                throw new IllegalArgumentException("Unresolved reference: " + ref);
+            }
         }
         return current == null ? MissingNode.getInstance() : current;
     }
@@ -157,7 +179,9 @@ public final class AsyncApiCodeGenerator {
     static String javaName(String value) {
         StringBuilder result = new StringBuilder();
         for (String part : value.replaceAll("[^A-Za-z0-9]+", " ").trim().split("\\s+")) {
-            if (!part.isEmpty()) result.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+            if (!part.isEmpty()) {
+                result.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+            }
         }
         return result.isEmpty() ? "GeneratedType" : result.toString();
     }

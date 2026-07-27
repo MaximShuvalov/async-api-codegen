@@ -9,11 +9,19 @@ public enum SchemaFormat {
     UNKNOWN;
 
     public static SchemaFormat from(String value) {
-        if (value == null || value.isBlank() || value.contains("vnd.aai.asyncapi")) return ASYNCAPI_SCHEMA;
+        if (value == null || value.isBlank() || value.contains("vnd.aai.asyncapi")) {
+            return ASYNCAPI_SCHEMA;
+        }
         String normalized = value.toLowerCase(java.util.Locale.ROOT);
-        if (normalized.contains("application/schema")) return JSON_SCHEMA;
-        if (normalized.contains("avro")) return AVRO;
-        if (normalized.contains("protobuf")) return PROTOBUF;
+        if (normalized.contains("application/schema")) {
+            return JSON_SCHEMA;
+        }
+        if (normalized.contains("avro")) {
+            return AVRO;
+        }
+        if (normalized.contains("protobuf")) {
+            return PROTOBUF;
+        }
         return UNKNOWN;
     }
 }

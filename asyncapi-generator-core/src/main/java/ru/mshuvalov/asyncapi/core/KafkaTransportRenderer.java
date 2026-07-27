@@ -13,7 +13,9 @@ final class KafkaTransportRenderer implements TransportRenderer {
         List<GeneratedSource> sources = new ArrayList<>();
         sources.addAll(new ContractRenderer().render(document, options));
         for (AsyncApiDocument.Operation op : document.operations()) {
-            if (!op.transports().contains(transport().bindingName())) continue;
+            if (!op.transports().contains(transport().bindingName())) {
+                continue;
+            }
             String payload = ContractRenderer.payloadType(op.payload());
             String headers = op.messageName() + "Headers";
             if (op.action() == AsyncApiDocument.Action.SEND && options.generateProducers()) {

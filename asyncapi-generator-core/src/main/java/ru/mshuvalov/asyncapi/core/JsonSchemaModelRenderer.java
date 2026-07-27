@@ -14,7 +14,9 @@ final class JsonSchemaModelRenderer implements SchemaRenderer {
     @Override public List<GeneratedSource> render(Map<String, JsonNode> schemas, GenerationOptions options) {
         List<GeneratedSource> result = new ArrayList<>();
         for (Map.Entry<String, JsonNode> schema : schemas.entrySet()) {
-            if (!supportedFormats().contains(SchemaFormat.from(schema.getValue().path("schemaFormat").asText()))) continue;
+            if (!supportedFormats().contains(SchemaFormat.from(schema.getValue().path("schemaFormat").asText()))) {
+                continue;
+            }
             String name = AsyncApiCodeGenerator.javaName(schema.getKey());
             JsonNode schemaNode = schema.getValue().has("schemaFormat") ? schema.getValue().path("schema") : schema.getValue();
             result.add(source(options.dtoPackage(), name, renderType(options.dtoPackage(), name, schemaNode)));
@@ -43,7 +45,9 @@ final class JsonSchemaModelRenderer implements SchemaRenderer {
             String ref = schema.path("$ref").asText();
             return AsyncApiCodeGenerator.javaName(ref.substring(ref.lastIndexOf('/') + 1));
         }
-        if (schema.has("enum")) return AsyncApiCodeGenerator.javaName(schema.path("title").asText("Value"));
+        if (schema.has("enum")) {
+            return AsyncApiCodeGenerator.javaName(schema.path("title").asText("Value"));
+        }
         return switch (schema.path("type").asText("object")) {
             case "string" -> isByteArray(schema) ? "byte[]" : "String";
             case "integer" -> schema.path("format").asText().equals("int64") ? "Long" : "Integer";
