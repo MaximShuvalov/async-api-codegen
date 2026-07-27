@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public final class AsyncApiCodeGenerator {
@@ -188,8 +189,11 @@ public final class AsyncApiCodeGenerator {
 
     private void write(List<GeneratedSource> sources, Path root) throws IOException {
         for (GeneratedSource source : sources) {
-            Path file = root.resolve(source.relativePath());
-            Files.createDirectories(file.getParent());
+            Path file = root.resolve(Objects.requireNonNull(source.relativePath(), "relativePath"));
+            Path parent = file.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
             Files.writeString(file, source.content());
         }
     }

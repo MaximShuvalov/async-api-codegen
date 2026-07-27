@@ -1,3 +1,5 @@
+import com.github.spotbugs.snom.SpotBugsTask
+
 plugins {
     id 'base'
     id 'io.gitlab.arturbosch.detekt' version '1.23.4' apply false
@@ -15,18 +17,6 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'io.gitlab.arturbosch.detekt'
-
-    detekt {
-        buildUponDefaultConfig = true
-        autoCorrect = false
-        parallel = true
-
-        dependencies {
-            detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:1.23.4"
-        }
-    }
-
     plugins.withId('org.jetbrains.kotlin.jvm') {
         apply plugin: 'io.gitlab.arturbosch.detekt'
 
@@ -60,10 +50,12 @@ subprojects {
             reportLevel = 'medium'
         }
 
-        tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
-            reports {
-                html.required = true
-                sarif.required = true
+        tasks.withType(SpotBugsTask).tap {
+            configureEach {
+                reports {
+                    html.required = true
+                    sarif.required = true
+                }
             }
         }
     }
