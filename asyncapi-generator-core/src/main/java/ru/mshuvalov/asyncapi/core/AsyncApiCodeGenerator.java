@@ -26,7 +26,7 @@ public final class AsyncApiCodeGenerator {
     private final Map<TransportType, TransportRenderer> transportRenderers;
 
     public AsyncApiCodeGenerator() {
-        this(List.of(new KafkaTransportRenderer()));
+        this(List.of(new KafkaTransportRenderer(new MustacheSourceGenerator())));
     }
 
     public AsyncApiCodeGenerator(Collection<? extends TransportRenderer> renderers) {

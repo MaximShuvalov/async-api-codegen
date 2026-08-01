@@ -1,0 +1,21 @@
+package {{{kafkaPackage}}};
+
+{{#requiresModelImport}}
+    import {{{dtoPackage}}}.{{{payloadType}}};
+{{/requiresModelImport}}
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
+
+@Component
+public class {{{className}}} implements {{{messageName}}}Publisher {
+    private final KafkaTemplate<String, {{{payloadType}}}> kafkaTemplate;
+
+    public {{{className}}}(KafkaTemplate<String, {{{payloadType}}}> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
+
+    @Override
+    public void send({{{payloadType}}} payload, {{{headersType}}} headers) {
+        kafkaTemplate.send(Channels.{{{channelConstant}}}, payload);
+    }
+}

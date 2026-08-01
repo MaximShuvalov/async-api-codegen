@@ -1,0 +1,21 @@
+package {{{kafkaPackage}}};
+
+{{#requiresModelImport}}
+    import {{{dtoPackage}}}.{{{payloadType}}};
+{{/requiresModelImport}}
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class {{{className}}} {
+    private final {{{messageName}}}Handler handler;
+
+    public {{{className}}}({{{messageName}}}Handler handler) {
+        this.handler = handler;
+    }
+
+    @KafkaListener(topics = Channels.{{{channelConstant}}})
+    public void onMessage({{{payloadType}}} payload) {
+        handler.handle(payload, null, new MessageMetadata(Channels.{{{channelConstant}}}, null));
+    }
+}
