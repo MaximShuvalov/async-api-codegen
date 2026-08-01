@@ -2,6 +2,9 @@ package ru.mshuvalov.asyncapi.core;
 
 import ru.mshuvalov.asyncapi.core.model.AsyncApiDocument;
 import ru.mshuvalov.asyncapi.core.model.TransportType;
+import ru.mshuvalov.asyncapi.core.sourcegenerator.KafkaConsumerSourceGeneratorInputData;
+import ru.mshuvalov.asyncapi.core.sourcegenerator.KafkaProducerSourceGeneratorInputData;
+import ru.mshuvalov.asyncapi.core.sourcegenerator.SourceGenerator;
 
 import java.util.ArrayList;
 import java.util.List;

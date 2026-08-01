@@ -8,6 +8,7 @@ import ru.mshuvalov.asyncapi.core.model.AsyncApiDocument;
 import ru.mshuvalov.asyncapi.core.model.AsyncApiDocument.Action;
 import ru.mshuvalov.asyncapi.core.model.SchemaFormat;
 import ru.mshuvalov.asyncapi.core.model.TransportType;
+import ru.mshuvalov.asyncapi.core.sourcegenerator.mustache.MustacheSourceGenerator;
 
 import java.io.IOException;
 import java.nio.file.Files;

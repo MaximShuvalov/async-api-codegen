@@ -1,4 +1,8 @@
-package ru.mshuvalov.asyncapi.core;
+package ru.mshuvalov.asyncapi.core.sourcegenerator.mustache;
+
+import ru.mshuvalov.asyncapi.core.sourcegenerator.KafkaConsumerSourceGeneratorInputData;
+import ru.mshuvalov.asyncapi.core.sourcegenerator.KafkaProducerSourceGeneratorInputData;
+import ru.mshuvalov.asyncapi.core.sourcegenerator.SourceGeneratorInputData;
 
 public class MustacheTemplateResolver {
     public static String resolve(SourceGeneratorInputData inputData){
