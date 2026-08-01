@@ -8,6 +8,7 @@ import ru.mshuvalov.asyncapi.core.model.AsyncApiDocument;
 import ru.mshuvalov.asyncapi.core.model.AsyncApiDocument.Action;
 import ru.mshuvalov.asyncapi.core.model.SchemaFormat;
 import ru.mshuvalov.asyncapi.core.model.TransportType;
+import ru.mshuvalov.asyncapi.core.sourcegenerator.mustache.MustacheSourceGenerator;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +27,7 @@ public final class AsyncApiCodeGenerator {
     private final Map<TransportType, TransportRenderer> transportRenderers;
 
     public AsyncApiCodeGenerator() {
-        this(List.of(new KafkaTransportRenderer()));
+        this(List.of(new KafkaTransportRenderer(new MustacheSourceGenerator())));
     }
 
     public AsyncApiCodeGenerator(Collection<? extends TransportRenderer> renderers) {

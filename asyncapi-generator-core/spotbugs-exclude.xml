@@ -1,0 +1,6 @@
+<FindBugsFilter>
+    <Match>
+        <Class name="ru.mshuvalov.asyncapi.core.sourcegenerator.mustache.MustacheTemplateResolver" />
+        <Bug pattern="DLS_DEAD_LOCAL_STORE" />
+    </Match>
+</FindBugsFilter>

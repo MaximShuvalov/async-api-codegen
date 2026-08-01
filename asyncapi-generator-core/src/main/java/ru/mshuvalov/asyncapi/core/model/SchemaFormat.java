@@ -1,6 +1,8 @@
 package ru.mshuvalov.asyncapi.core.model;
 
-/** Schema language declared by AsyncAPI's Multi Format Schema Object. */
+/**
+ * Schema language declared by AsyncAPI's Multi Format Schema Object.
+ */
 public enum SchemaFormat {
     ASYNCAPI_SCHEMA,
     JSON_SCHEMA,
