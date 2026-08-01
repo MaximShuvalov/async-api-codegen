@@ -27,3 +27,7 @@ publishing {
         }
     }
 }
+
+spotbugs {
+    excludeFilter = file("spotbugs-exclude.xml")
+}
